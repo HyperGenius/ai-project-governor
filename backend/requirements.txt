@@ -2,3 +2,6 @@ supabase
 python-dotenv
 pytest
 gotrue
+fastapi
+uvicorn[standard]
+pydantic-settings
