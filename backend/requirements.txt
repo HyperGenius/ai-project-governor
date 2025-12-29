@@ -5,3 +5,4 @@ gotrue
 fastapi
 uvicorn[standard]
 pydantic-settings
+google-genai

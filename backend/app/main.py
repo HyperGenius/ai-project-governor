@@ -3,9 +3,11 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import Client
 from app.db.client import get_supabase
-import logging
+from app.models.report import DailyReportDraft, DailyReportPolished
+from app.services.ai_service import AIService
 
 app = FastAPI(title="AI Project Governor API")
+
 
 # フロントエンド(React)からのアクセスを許可する設定
 # MVP段階では全許可 ("*") 、本番ではフロントのドメインのみに限定
@@ -16,6 +18,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "ai-project-governor-backend"}
 
 
 @app.get("/health/db")
@@ -36,6 +43,13 @@ def db_health_check(supabase: Client = Depends(get_supabase)):
         raise HTTPException(status_code=500, detail=f"DB Connection Error: {str(e)}")
 
 
-@app.get("/")
-def root():
-    return {"message": "Hello from Cloud Run!"}
+@app.post("/api/preview", response_model=DailyReportPolished)
+async def preview_report(draft: DailyReportDraft):
+    """
+    【AI変換テスト用】
+    粗いテキストを受け取り、JTC構文に変換して返します。
+    DBへの保存は行いません。
+    """
+    service = AIService()
+    result = await service.polish_report(draft.raw_content)
+    return result
