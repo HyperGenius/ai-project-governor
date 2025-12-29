@@ -1,6 +1,9 @@
 # backend/apps/main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from supabase import Client
+from app.db.client import get_supabase
+import logging
 
 app = FastAPI(title="AI Project Governor API")
 
@@ -15,10 +18,22 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
-def health_check():
-    """ヘルスチェック用エンドポイント"""
-    return {"status": "ok", "service": "ai-project-governor-backend"}
+@app.get("/health/db")
+def db_health_check(supabase: Client = Depends(get_supabase)):
+    """
+    DB接続確認
+    実際にSupabaseへクエリを投げて応答があるか確認します
+    """
+    try:
+        response = supabase.table("tenants").select("count", count="exact").execute()  # type: ignore
+
+        return {
+            "status": "ok",
+            "db_response": "connected",
+            "count": response.count,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DB Connection Error: {str(e)}")
 
 
 @app.get("/")
