@@ -8,6 +8,10 @@ class Settings(BaseSettings):
     # 環境変数 SUPABASE_URL が自動でここにマッピング
     SUPABASE_URL: str
     SUPABASE_KEY: str
+    GEMINI_API_KEY: str
+
+    # デフォルトのAIモデル
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # .env ファイルを読み込む設定
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
