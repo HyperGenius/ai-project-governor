@@ -1,6 +1,7 @@
 /* src/app/page.tsx */
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -35,9 +36,19 @@ export default async function Home() {
           <p className="mb-4 text-lg">ようこそ、ログインしました！</p>
           <p className="mb-6 font-bold text-blue-600">{user.email}</p>
 
-          <form action={signOut}>
-            <Button variant="outline">ログアウト</Button>
-          </form>
+          <div>
+            <Link href="/reports/new">
+              <Button className="w-full text-lg py-6">
+                📝 日報を作成する
+              </Button>
+            </Link>
+          </div>
+
+          <div className="pt-4 border-t">
+            <form action={signOut}>
+              <Button variant="ghost" className="text-gray-500">ログアウト</Button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
