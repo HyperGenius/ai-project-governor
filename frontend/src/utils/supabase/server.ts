@@ -2,6 +2,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+/**
+ * 環境変数からサーバーサイドクライアント作成
+ * NEXT_PUBLIC_SUPABASE_URL: Supabase URL
+ * NEXT_PUBLIC_SUPABASE_ANON_KEY: Supabase Anon Key
+ * @returns Supabaseクライアント
+ */
 export async function createClient() {
     const cookieStore = await cookies()
 
