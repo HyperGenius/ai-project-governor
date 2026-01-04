@@ -67,9 +67,7 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                 <div className="mt-8 pt-8 border-t">
                     <h3 className="text-sm font-bold text-gray-700 mb-2">元の箇条書きメモ</h3>
                     <div className="bg-white p-4 rounded-md border whitespace-pre-wrap text-gray-600 text-sm">
-                        {/* content_raw は APIのレスポンス型定義に追加が必要 */}
-                        {/* 一旦表示しないか、型定義を修正してから表示する */}
-                        (元のメモはまだ型定義に含まれていないため表示できません)
+                        {report.content_raw}
                     </div>
                 </div>
 

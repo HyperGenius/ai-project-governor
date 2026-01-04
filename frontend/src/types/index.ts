@@ -7,6 +7,7 @@ export type Report = {
     id: string
     subject: string | null
     content_polished: string | null
+    content_raw: string
     politeness_level: number
     report_date: string
     created_at: string
