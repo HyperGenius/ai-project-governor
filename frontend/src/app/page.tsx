@@ -1,8 +1,13 @@
-/* src/app/page.tsx */
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+// 型定義
+import { Report } from '@/types/index'
+// コンポーネント
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { ReportActionArea } from '@/components/dashboard/ReportActionArea'
+import { ReportList } from '@/components/dashboard/ReportList'
+// API
+import { getReports } from '@/services/reports'
 
 /**
  * メインページ
@@ -11,45 +16,29 @@ import { Button } from '@/components/ui/button'
 export default async function Home() {
   const supabase = await createClient()
 
-  // ユーザー情報を取得
-  const { data: { user } } = await supabase.auth.getUser()
+  // 1. セッションとトークンの取得
+  const { data: { session } } = await supabase.auth.getSession()
 
-  // 万が一ミドルウェアをすり抜けても、ここで弾く（二重チェック）
-  if (!user) {
+  if (!session) {
     redirect('/login')
   }
 
-  // ログアウト処理 (Server Action)
-  const signOut = async () => {
-    'use server'
-    const supabase = await createClient()
-    await supabase.auth.signOut()
-    redirect('/login')
-  }
+  // 2. バックエンドAPIから日報一覧を取得
+  const reports = await getReports(session.access_token)
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <h1 className="text-4xl font-bold mb-8">日報管理システム</h1>
+    <div className="flex min-h-screen flex-col items-center p-8 bg-gray-50">
+      <div className="w-full max-w-4xl space-y-8">
 
-        <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md text-center">
-          <p className="mb-4 text-lg">ようこそ、ログインしました！</p>
-          <p className="mb-6 font-bold text-blue-600">{user.email}</p>
+        {/* ヘッダーエリア */}
+        <DashboardHeader userEmail={session.user.email} />
 
-          <div>
-            <Link href="/reports/new">
-              <Button className="w-full text-lg py-6">
-                📝 日報を作成する
-              </Button>
-            </Link>
-          </div>
+        {/* アクションエリア */}
+        <ReportActionArea />
 
-          <div className="pt-4 border-t">
-            <form action={signOut}>
-              <Button variant="ghost" className="text-gray-500">ログアウト</Button>
-            </form>
-          </div>
-        </div>
+        {/* リストエリア */}
+        <ReportList reports={reports} />
+
       </div>
     </div>
   )
