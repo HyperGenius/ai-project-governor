@@ -119,3 +119,35 @@ async def get_report_detail(
         raise HTTPException(status_code=404, detail="Report not found")
 
     return res.data
+
+
+# --- 削除API ---
+@router.delete("/reports/{report_id}", status_code=204)
+async def delete_report(
+    report_id: UUID,
+    current_user: User = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """
+    指定されたIDの日報を削除する
+    """
+    # 1. まず存在確認 & 権限確認
+    existing = (
+        supabase.table(TABLE_DAILY_REPORTS)
+        .select(COL_ID)
+        .eq(COL_ID, str(report_id))
+        .eq(COL_USER_ID, current_user.id)
+        .single()
+        .execute()
+    )
+
+    if not existing.data:
+        # データが見つからない（または他人のデータ）場合はエラー
+        raise HTTPException(
+            status_code=404, detail="Report not found or permission denied"
+        )
+
+    # 2. 削除実行
+    supabase.table(TABLE_DAILY_REPORTS).delete().eq(COL_ID, str(report_id)).execute()
+
+    return  # 204 No Content なので中身は返さない

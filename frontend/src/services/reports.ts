@@ -48,3 +48,19 @@ export async function getReportById(id: string, accessToken: string): Promise<Re
 
     return res.json()
 }
+
+/**
+ * 指定されたIDの日報を削除する
+ * @param id 日報ID
+ * @param accessToken API認証用のアクセストークン
+ */
+export async function deleteReport(id: string, accessToken: string): Promise<boolean> {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reports/${id}`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    })
+
+    return res.ok
+}

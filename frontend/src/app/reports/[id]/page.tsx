@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { ChevronLeft } from 'lucide-react'
 import { getReportById } from '@/services/reports'
 import { ReportCopySection } from '@/components/dashboard/ReportCopySection'
+import { DeleteReportButton } from '@/components/dashboard/DeleteReportButton'
 
 type ReportDetailPageProps = {
     params: Promise<{ id: string }>
@@ -71,6 +72,10 @@ export default async function ReportDetailPage({ params }: ReportDetailPageProps
                     </div>
                 </div>
 
+                {/* 削除ボタン */}
+                <div className="flex justify-end">
+                    <DeleteReportButton reportId={report.id} />
+                </div>
             </div>
         </div>
     )
