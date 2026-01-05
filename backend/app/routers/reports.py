@@ -52,20 +52,24 @@ async def create_report(
         )
 
     tenant_id = profile_res.data[COL_TENANT_ID]  # type: ignore
+    politeness_level = draft.politeness_level
 
     # 2. AI変換の実行
     ai_service = AIService()
-    polished_result = await ai_service.polish_report(draft.raw_content)
+    polished_result = await ai_service.generate_polished_report(
+        draft.raw_content, politeness_level
+    )
 
     # 3. DBへ保存
     # DBのカラム名に合わせてデータを整形
+    print("politeness_level: ", polished_result.politeness_level)
     report_data = {
         COL_USER_ID: current_user.id,
         COL_TENANT_ID: tenant_id,
         "content_raw": draft.raw_content,
         "content_polished": polished_result.content_polished,
         "subject": polished_result.subject,
-        "politeness_level": polished_result.politeness_level,
+        "politeness_level": politeness_level,
         # created_at はDB側でデフォルト値が入る設定なら不要
     }
 
