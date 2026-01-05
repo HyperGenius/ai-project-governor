@@ -1,3 +1,4 @@
+-- 20251230024729_add_subject_to_daily_reports.sql
 -- subject (件名) カラムを追加
 ALTER TABLE public.daily_reports 
 ADD COLUMN IF NOT EXISTS subject text;
