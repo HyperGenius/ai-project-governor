@@ -64,3 +64,30 @@ export async function deleteReport(id: string, accessToken: string): Promise<boo
 
     return res.ok
 }
+
+/**
+ * 日報を更新する
+ * @param id 日報ID
+ * @param accessToken トークン
+ * @param data 更新するデータ（件名、本文）
+ */
+export async function updateReport(
+    id: string,
+    accessToken: string,
+    data: { subject?: string; content_polished?: string }
+): Promise<Report | null> {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reports/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(data),
+    })
+
+    if (!res.ok) {
+        return null
+    }
+
+    return res.json()
+}

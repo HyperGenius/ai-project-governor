@@ -7,7 +7,12 @@ from uuid import UUID
 
 from app.api.deps import get_current_user
 from app.db.client import get_supabase
-from app.models.report import DailyReportDraft, DailyReportPolished, DailyReportResponse
+from app.models.report import (
+    DailyReportDraft,
+    DailyReportPolished,
+    DailyReportResponse,
+    DailyReportUpdate,
+)
 from app.services.ai_service import AIService
 from app.core.constants import (
     TABLE_PROFILES,
@@ -151,3 +156,38 @@ async def delete_report(
     supabase.table(TABLE_DAILY_REPORTS).delete().eq(COL_ID, str(report_id)).execute()
 
     return  # 204 No Content なので中身は返さない
+
+
+# --- 更新API ---
+@router.put("/reports/{report_id}", response_model=DailyReportResponse)
+async def update_report(
+    report_id: UUID,
+    report_update: DailyReportUpdate,
+    current_user: User = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """
+    指定されたIDの日報を更新する
+    """
+    # 1. 更新するデータを辞書にする（Noneの項目は除外）
+    update_data = report_update.model_dump(exclude_unset=True)
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    # 2. 自分のデータかつ指定IDのものを更新
+    # update() して select() することで更新後のデータを取得して返す
+    res = (
+        supabase.table(TABLE_DAILY_REPORTS)
+        .update(update_data)
+        .eq(COL_ID, str(report_id))
+        .eq(COL_USER_ID, current_user.id)
+        .execute()
+    )
+
+    if not res.data:
+        raise HTTPException(
+            status_code=404, detail="Report not found or permission denied"
+        )
+
+    return res.data[0]  # report_idはユニークなのでバリデーション不要
