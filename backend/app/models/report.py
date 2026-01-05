@@ -13,6 +13,7 @@ class DailyReportDraft(BaseModel):
         description="箇条書きなどの粗いテキスト",
         example="サーバー落ちた。復旧作業中。",
     )  # type: ignore
+    politeness_level: int = Field(..., description="丁寧さレベル(1-5)", ge=1, le=5)
 
 
 class DailyReportPolished(BaseModel):
