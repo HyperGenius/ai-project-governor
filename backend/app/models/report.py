@@ -37,3 +37,11 @@ class DailyReportResponse(BaseModel):
 
     report_date: date
     created_at: datetime
+
+
+class DailyReportUpdate(BaseModel):
+    """更新用のスキーマ"""
+
+    subject: Optional[str] = None
+    content_polished: Optional[str] = None
+    # 必要なら politeness_level も更新できるようにするが、今回はテキスト修正を主とする
