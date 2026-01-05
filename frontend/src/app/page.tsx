@@ -1,7 +1,6 @@
+/* frontend/src/app/page.tsx */
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-// 型定義
-import { Report } from '@/types/index'
 // コンポーネント
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { ReportActionArea } from '@/components/dashboard/ReportActionArea'
