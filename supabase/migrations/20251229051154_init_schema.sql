@@ -1,3 +1,4 @@
+-- 20251229051154_init_schema.sql
 -- 1. テナント（組織・チーム）テーブル
 -- 将来的に課金管理などもここに紐づきます
 create table public.tenants (
