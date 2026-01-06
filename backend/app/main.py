@@ -27,8 +27,14 @@ app.add_middleware(
 app.include_router(reports.router, prefix="/api/v1", tags=["reports"])
 
 
-@app.get("/health")
+@app.get("/")
 def health_check():
+    """Render用ヘルスチェック"""
+    return {"status": "ok", "message": "Governor API is running"}
+
+
+@app.get("/health")
+def health():
     return {"status": "ok", "service": "ai-project-governor-backend"}
 
 
