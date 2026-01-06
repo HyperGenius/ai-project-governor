@@ -2,17 +2,20 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { signUpAction } from '@/app/signup/actions'
+import { toast } from 'sonner'
 
 /**
  * サインアップフォーム
  * @returns サインアップフォーム
  */
 export function SignupForm() {
+    const router = useRouter()
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [mode, setMode] = useState<'create' | 'join'>('create')
@@ -33,6 +36,14 @@ export function SignupForm() {
 
         try {
             const result = await signUpAction(data)
+
+            if (result?.success) {
+                toast.success('アカウントを作成しました') // (任意) sonner等があれば
+                router.refresh() // サーバーコンポーネントのデータを最新にする
+                router.push('/') // トップページへ遷移
+                return // ここで関数を終了させる（finallyに行かせないため）
+            }
+
             if (result?.error) {
                 setError(result.error)
             }
@@ -51,8 +62,8 @@ export function SignupForm() {
                     type="button"
                     onClick={() => setMode('create')}
                     className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${mode === 'create'
-                            ? 'bg-background shadow text-foreground'
-                            : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-background shadow text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
                         }`}
                 >
                     新規チーム作成
@@ -61,8 +72,8 @@ export function SignupForm() {
                     type="button"
                     onClick={() => setMode('join')}
                     className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${mode === 'join'
-                            ? 'bg-background shadow text-foreground'
-                            : 'text-muted-foreground hover:text-foreground'
+                        ? 'bg-background shadow text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
                         }`}
                 >
                     チームに参加
