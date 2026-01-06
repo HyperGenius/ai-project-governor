@@ -31,5 +31,8 @@ test.describe('日報作成フロー', () => {
 
         // 検証処理（リロード対策などはverifyReportExists内に隠蔽）
         await reportPage.verifyReportExists(newSubject);
+
+        // 追加: 詳細ページへ遷移できるか確認
+        await reportPage.openReport(newSubject);
     });
 });

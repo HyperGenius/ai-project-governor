@@ -45,4 +45,15 @@ export class ReportCreatePage {
         // IDに基づくリンクの存在確認、同じ件名が複数ある場合に備えて .first() を使用
         await expect(this.page.getByRole('link', { name: subject }).first()).toBeVisible();
     }
+
+    // 指定された件名のレポートを開く
+    async openReport(subject: string) {
+        // リストから件名を含むリンクを探してクリック
+        const reportLink = this.page.getByRole('link', { name: subject }).first();
+        await reportLink.click();
+
+        // URLが詳細ページ (/reports/uuid) に変わったことを確認
+        // 正規表現で UUID のパターンなどを簡易チェック
+        await expect(this.page).toHaveURL(/\/reports\/[\w-]+/);
+    }
 }
