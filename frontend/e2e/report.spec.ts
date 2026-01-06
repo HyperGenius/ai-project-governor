@@ -27,9 +27,9 @@ test.describe('日報作成フロー', () => {
 
         // 作成処理（複雑なAPI待機ロジックはsubmitReport内に隠蔽）
         const content = `Playwrightによる自動テスト日報 ${new Date().getTime()}`;
-        const newReportId = await reportPage.submitReport(content);
+        const newSubject = await reportPage.submitReport(content);
 
         // 検証処理（リロード対策などはverifyReportExists内に隠蔽）
-        await reportPage.verifyReportExists(newReportId);
+        await reportPage.verifyReportExists(newSubject);
     });
 });
