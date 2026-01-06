@@ -1,4 +1,5 @@
 # backend/apps/main.py
+import os
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import Client
@@ -10,11 +11,13 @@ from app.routers import reports
 app = FastAPI(title="AI Project Governor API")
 
 
-# フロントエンド(React)からのアクセスを許可する設定
-# MVP段階では全許可 ("*") 、本番ではフロントのドメインのみに限定
+# 環境変数から許可オリジンを取得（カンマ区切りで複数指定可能に）
+# デフォルトでlocalhostを含める
+origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
