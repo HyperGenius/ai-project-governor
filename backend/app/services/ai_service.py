@@ -8,7 +8,7 @@ from app.core.prompts import (
     WBS_GENERATION_SYSTEM_PROMPT,
 )
 from app.models.report import DailyReportPolished
-from app.models.projects import WBSRequest, WBSResponse
+from app.models.project import WBSRequest, WBSResponse
 
 
 class AIService:

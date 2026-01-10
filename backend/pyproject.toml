@@ -60,5 +60,5 @@ ignore_missing_imports = true
 pythonpath = ["."]
 addopts = "-ra -q"
 testpaths = [
-    "__tests__",
+    "tests",
 ]
