@@ -8,6 +8,9 @@ import { deleteReport } from '@/services/reports'
 import { Button } from '@/components/ui/button'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useSWRConfig } from 'swr'
+
+// ... (AlertDialog関連のインポートはそのまま) ...
 import {
     AlertDialog,
     AlertDialogAction,
@@ -24,20 +27,11 @@ type DeleteReportButtonProps = {
     reportId: string
 }
 
-/**
- * 日報削除ボタン
- * @param reportId 日報ID
- * @returns 日報削除ボタン
- */
 export function DeleteReportButton({ reportId }: DeleteReportButtonProps) {
     const router = useRouter()
+    const { mutate } = useSWRConfig()
     const [isDeleting, setIsDeleting] = useState(false)
 
-    /**
-     * 日報削除処理
-     * 削除が正常に行われた場合はトップページに戻る
-     * エラーが発生した場合はトーストを表示する
-     */
     const handleDelete = async () => {
         setIsDeleting(true)
         try {
@@ -54,9 +48,17 @@ export function DeleteReportButton({ reportId }: DeleteReportButtonProps) {
                 throw new Error('削除に失敗しました')
             }
 
+            // 日報一覧のキャッシュを無効化する
+            // 全てのキャッシュキーを確認し、APIパスに '/reports' が含まれるものを再取得対象にする
+            await mutate(
+                (key) => Array.isArray(key) && (key[0] as string).includes('/api/v1/reports'),
+                undefined,
+                { revalidate: true }
+            )
+
             toast.success('日報を削除しました')
-            router.push('/') // トップへ戻る
-            router.refresh() // データの再取得をトリガー
+            router.push('/')
+            router.refresh()
 
         } catch (error) {
             toast.error('削除中にエラーが発生しました')

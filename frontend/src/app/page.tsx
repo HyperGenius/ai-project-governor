@@ -5,8 +5,6 @@ import { redirect } from 'next/navigation'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { ReportActionArea } from '@/components/dashboard/ReportActionArea'
 import { ReportList } from '@/components/dashboard/ReportList'
-// API
-import { getReports } from '@/services/reports'
 
 /**
  * メインページ
@@ -22,18 +20,16 @@ export default async function Home() {
     redirect('/login')
   }
 
-  // 2. 並行リクエストで「日報一覧」と「プロフィール(テナント情報含む)」を取得
-  const [reports, profileRes] = await Promise.all([
-    getReports(session.access_token),
-    supabase
-      .from('profiles')
-      .select('*, tenants(id, name)') // 紐付いているtenantsテーブルの情報も取得
-      .eq('id', session.user.id)
-      .single()
-  ])
+  // 2. プロフィール(テナント情報含む)のみ取得
+  // ※日報一覧取得(getReports)は削除し、ReportList内でSWRにより非同期取得させる
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*, tenants(id, name)')
+    .eq('id', session.user.id)
+    .single()
 
   // 3. テナント情報の取り出し（型安全性のため少しチェック）
-  const tenant = profileRes.data?.tenants as unknown as { id: string; name: string } | null
+  const tenant = profile?.tenants as unknown as { id: string; name: string } | null
 
   return (
     <div className="flex min-h-screen flex-col items-center p-8 bg-gray-50">
@@ -49,8 +45,8 @@ export default async function Home() {
         {/* アクションエリア */}
         <ReportActionArea />
 
-        {/* リストエリア */}
-        <ReportList reports={reports} />
+        {/* リストエリア (アクセストークンを渡す) */}
+        <ReportList accessToken={session.access_token} />
 
       </div>
     </div>
