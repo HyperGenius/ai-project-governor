@@ -6,7 +6,9 @@ from supabase import Client
 from app.db.client import get_supabase
 from app.models.report import DailyReportDraft, DailyReportPolished
 from app.services.ai_service import AIService
-from app.routers import reports
+
+# プロジェクト関連のルーターを追加
+from app.routers import reports, projects, members
 
 app = FastAPI(title="AI Project Governor API")
 
@@ -23,8 +25,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# レポート関連のルーターを追加
-app.include_router(reports.router, prefix="/api/v1", tags=["reports"])
+ROUTER_PREFIX = "/api/v1"
+
+# ルーター追加
+app.include_router(reports.router, prefix=ROUTER_PREFIX, tags=["reports"])
+app.include_router(projects.router, prefix=ROUTER_PREFIX, tags=["projects"])
+app.include_router(members.router, prefix=ROUTER_PREFIX, tags=["members"])
 
 
 @app.get("/")

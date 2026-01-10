@@ -54,7 +54,7 @@ export function ReportList({ accessToken }: ReportListProps) {
 
     return (
         <div className="space-y-4">
-            <h2 className="text-xl font-bold text-gray-800 border-b pb-2">过去の日報一覧</h2>
+            <h2 className="text-xl font-bold text-gray-800 border-b pb-2">過去の日報一覧</h2>
 
             {!reports || reports.length === 0 ? (
                 <div className="text-center py-10 text-gray-500 bg-white rounded-lg border border-dashed">

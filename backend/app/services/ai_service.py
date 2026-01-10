@@ -5,8 +5,10 @@ from app.core.config import settings
 from app.core.prompts import (
     JTC_DAILY_REPORT_SYSTEM_PROMPT,
     PROMPTS_WITH_LEVEL_DESCRIPTION,
+    WBS_GENERATION_SYSTEM_PROMPT,
 )
 from app.models.report import DailyReportPolished
+from app.models.project import WBSRequest, WBSResponse
 
 
 class AIService:
@@ -42,6 +44,7 @@ class AIService:
 
         except Exception as e:
             # エラーが発生した場合は、失敗した日報を返す
+            # TODO: printをloggerに変更する
             print(f"AI Conversion Error: {e}")
             return DailyReportPolished(
                 subject="【報告】業務日報（AI変換失敗）",
@@ -99,3 +102,39 @@ class AIService:
                 content_polished=f"AI変換中にエラーが発生しました。\n原文: {content_raw}",
                 politeness_level=1,
             )
+
+    async def generate_wbs(self, request: WBSRequest) -> WBSResponse:
+        """
+        プロジェクト情報を元にWBS（タスクリスト）を生成する
+        """
+        # 入力テキストの整形
+        input_text = f"""
+        プロジェクト名: {request.name}
+        概要: {request.description}
+        期間: {request.start_date} 〜 {request.end_date}
+        マイルストーン: {request.milestones or '特になし'}
+        """
+
+        prompt = WBS_GENERATION_SYSTEM_PROMPT.format(input_text=input_text)
+
+        try:
+            response = await self.client.aio.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=WBSResponse,
+                ),
+            )
+
+            if response.parsed:
+                return response.parsed
+
+            result_json = json.loads(response.text)
+            return WBSResponse(**result_json)
+
+        except Exception as e:
+            # TODO: printをloggerに変更する
+            print(f"AI WBS Generation Error: {e}")
+            # エラー時は空のリストを返すなど、安全側に倒す
+            return WBSResponse(tasks=[])
