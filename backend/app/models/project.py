@@ -77,3 +77,12 @@ class ProjectResponse(BaseModel):
     created_at: datetime
     # リスト表示などでタスクを含める場合
     tasks: Optional[List[TaskResponse]] = []
+
+
+class TaskUpdate(BaseModel):
+    """タスク更新用スキーマ"""
+
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None  # 'todo', 'in_progress', 'done'
+    assigned_to: Optional[UUID] = None  # 担当者変更用

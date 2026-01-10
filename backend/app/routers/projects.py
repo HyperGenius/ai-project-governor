@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from supabase import Client
 from gotrue.types import User
 from typing import List
+from uuid import UUID
 
 from app.api.deps import get_current_user
 from app.db.client import get_supabase
@@ -117,4 +118,29 @@ async def get_projects(
         .order("created_at", desc=True)
         .execute()
     )
+    return res.data
+
+
+# --- プロジェクト詳細取得API ---
+@router.get("/projects/{project_id}", response_model=ProjectResponse)
+async def get_project_detail(
+    project_id: UUID,
+    current_user: User = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """
+    指定されたIDのプロジェクト詳細とタスク一覧を取得する
+    """
+    # RLSにより、自テナントのデータしか取得できないため安全
+    res = (
+        supabase.table(TABLE_PROJECTS)
+        .select("*, tasks(*)")  # タスクも結合して取得
+        .eq(COL_ID, project_id)
+        .single()
+        .execute()
+    )
+
+    if not res.data:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     return res.data

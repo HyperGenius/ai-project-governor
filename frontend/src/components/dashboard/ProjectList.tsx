@@ -58,42 +58,48 @@ export function ProjectList({ accessToken }: ProjectListProps) {
                         const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
                         return (
-                            <Card key={project.id} className="hover:shadow-md transition-shadow">
-                                <CardHeader className="pb-2">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-2">
-                                            <FolderKanban className="h-5 w-5 text-blue-600" />
-                                            <CardTitle className="text-lg">{project.name}</CardTitle>
+                            // Linkコンポーネントでラップして詳細ページへ遷移させる
+                            // className="block group" でカード全体をクリック可能にし、ホバー効果を調整
+                            <Link href={`/projects/${project.id}`} key={project.id} className="block group">
+                                <Card className="hover:shadow-md transition-shadow h-full border-l-4 border-l-transparent group-hover:border-l-blue-500">
+                                    <CardHeader className="pb-2">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-2">
+                                                <FolderKanban className="h-5 w-5 text-blue-600" />
+                                                <CardTitle className="text-lg group-hover:text-blue-600 transition-colors">
+                                                    {project.name}
+                                                </CardTitle>
+                                            </div>
+                                            <Badge variant={project.status === 'planning' ? 'secondary' : 'default'}>
+                                                {project.status}
+                                            </Badge>
                                         </div>
-                                        <Badge variant={project.status === 'planning' ? 'secondary' : 'default'}>
-                                            {project.status}
-                                        </Badge>
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                                        {project.description}
-                                    </p>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                                            {project.description}
+                                        </p>
 
-                                    {/* 進捗バー */}
-                                    <div className="space-y-1">
-                                        <div className="flex justify-between text-xs text-gray-500">
-                                            <span>進捗: {progress}%</span>
-                                            <span>{completedTasks} / {totalTasks} タスク</span>
+                                        {/* 進捗バー */}
+                                        <div className="space-y-1">
+                                            <div className="flex justify-between text-xs text-gray-500">
+                                                <span>進捗: {progress}%</span>
+                                                <span>{completedTasks} / {totalTasks} タスク</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-blue-500 transition-all duration-500"
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-blue-500 transition-all duration-500"
-                                                style={{ width: `${progress}%` }}
-                                            />
-                                        </div>
-                                    </div>
 
-                                    <div className="mt-4 text-xs text-gray-400 text-right">
-                                        期限: {project.end_date || '未定'}
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                        <div className="mt-4 text-xs text-gray-400 text-right">
+                                            期限: {project.end_date || '未定'}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </Link>
                         )
                     })}
                 </div>
