@@ -4,6 +4,8 @@
 TABLE_DAILY_REPORTS = "daily_reports"
 TABLE_PROFILES = "profiles"
 TABLE_TENANTS = "tenants"
+TABLE_PROJECTS = "projects"
+TABLE_TASKS = "tasks"
 
 # --- Common Column Names ---
 COL_ID = "id"
