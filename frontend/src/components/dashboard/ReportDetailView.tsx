@@ -20,42 +20,45 @@ import { ChevronLeft, Pencil, Save, X } from 'lucide-react'
 import { ReportCopySection } from '@/components/dashboard/ReportCopySection'
 import { DeleteReportButton } from '@/components/dashboard/DeleteReportButton'
 
-type ReportDetailViewProps = {
-    report: Report
-    accessToken: string
-}
-
-/**
- * 日報詳細表示コンポーネント
- * @param report 日報データ
- * @param accessToken アクセストークン
- * @returns 日報詳細表示コンポーネント
- */
-export function ReportDetailView({ report, accessToken }: ReportDetailViewProps) {
+// --- Custom Hook: 編集ロジックの分離 ---
+function useReportEditor(report: Report, accessToken: string) {
     const router = useRouter()
-
-    // 編集モードの状態管理
     const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(false)
 
-    // フォームの状態管理
-    const [subject, setSubject] = useState(report.subject || '')
-    const [content, setContent] = useState(report.content_polished || '')
+    // 編集用フォームの状態
+    const [formData, setFormData] = useState({
+        subject: report.subject || '',
+        content: report.content_polished || ''
+    })
 
-    // 保存処理
-    const handleSave = async () => {
+    const handleChange = (key: keyof typeof formData, value: string) => {
+        setFormData(prev => ({ ...prev, [key]: value }))
+    }
+
+    const startEditing = () => setIsEditing(true)
+
+    const cancelEditing = () => {
+        setFormData({
+            subject: report.subject || '',
+            content: report.content_polished || ''
+        })
+        setIsEditing(false)
+    }
+
+    const saveReport = async () => {
         setLoading(true)
         try {
             const updated = await updateReport(report.id, accessToken, {
-                subject,
-                content_polished: content
+                subject: formData.subject,
+                content_polished: formData.content
             })
 
             if (!updated) throw new Error('更新に失敗しました')
 
             toast.success('日報を更新しました')
             setIsEditing(false)
-            router.refresh() // サーバーコンポーネントのデータを再取得
+            router.refresh()
         } catch (err) {
             toast.error('エラーが発生しました')
             console.error(err)
@@ -64,18 +67,41 @@ export function ReportDetailView({ report, accessToken }: ReportDetailViewProps)
         }
     }
 
-    // キャンセル処理
-    const handleCancel = () => {
-        setSubject(report.subject || '')
-        setContent(report.content_polished || '')
-        setIsEditing(false)
+    return {
+        isEditing,
+        loading,
+        formData,
+        handleChange,
+        startEditing,
+        cancelEditing,
+        saveReport
     }
+}
+
+type ReportDetailViewProps = {
+    report: Report
+    accessToken: string
+}
+
+/**
+ * 日報詳細表示コンポーネント
+ */
+export function ReportDetailView({ report, accessToken }: ReportDetailViewProps) {
+    // ロジックをフックから呼び出し
+    const {
+        isEditing,
+        loading,
+        formData,
+        handleChange,
+        startEditing,
+        cancelEditing,
+        saveReport
+    } = useReportEditor(report, accessToken)
 
     return (
         <div className="w-full max-w-3xl space-y-6">
             {/* --- ヘッダーエリア --- */}
             <div className="flex items-center w-full min-h-[40px]">
-                {/* 左側: 戻るボタン & タイトル */}
                 <div className="flex items-center gap-4 overflow-hidden flex-1">
                     <Link href="/">
                         <Button variant="ghost" size="icon">
@@ -83,10 +109,11 @@ export function ReportDetailView({ report, accessToken }: ReportDetailViewProps)
                         </Button>
                     </Link>
 
+                    {/* タイトル表示/編集 */}
                     {isEditing ? (
                         <Input
-                            value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
+                            value={formData.subject}
+                            onChange={(e) => handleChange('subject', e.target.value)}
                             className="font-bold text-lg h-10"
                             placeholder="件名を入力"
                         />
@@ -97,20 +124,20 @@ export function ReportDetailView({ report, accessToken }: ReportDetailViewProps)
                     )}
                 </div>
 
-                {/* 右側: アクションボタン */}
+                {/* アクションボタン */}
                 <div className="ml-4 shrink-0 flex items-center gap-2">
                     {isEditing ? (
                         <>
-                            <Button variant="ghost" size="sm" onClick={handleCancel} disabled={loading}>
+                            <Button variant="ghost" size="sm" onClick={cancelEditing} disabled={loading}>
                                 <X className="mr-2 h-4 w-4" /> キャンセル
                             </Button>
-                            <Button size="sm" onClick={handleSave} disabled={loading}>
+                            <Button size="sm" onClick={saveReport} disabled={loading}>
                                 <Save className="mr-2 h-4 w-4" /> 保存
                             </Button>
                         </>
                     ) : (
                         <>
-                            <Button variant="outline" size="icon" onClick={() => setIsEditing(true)}>
+                            <Button variant="outline" size="icon" onClick={startEditing}>
                                 <Pencil className="h-4 w-4" />
                             </Button>
                             <DeleteReportButton reportId={report.id} />
@@ -119,7 +146,7 @@ export function ReportDetailView({ report, accessToken }: ReportDetailViewProps)
                 </div>
             </div>
 
-            {/* --- メタ情報 --- */}
+            {/* --- メタ情報 (閲覧時のみ) --- */}
             {!isEditing && (
                 <div className="flex items-center gap-4 text-sm text-gray-500 px-2">
                     <p>{new Date(report.created_at).toLocaleString('ja-JP')}</p>
@@ -135,14 +162,13 @@ export function ReportDetailView({ report, accessToken }: ReportDetailViewProps)
                     </CardHeader>
                     <CardContent>
                         <Textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
+                            value={formData.content}
+                            onChange={(e) => handleChange('content', e.target.value)}
                             className="min-h-[300px] text-base leading-relaxed p-4"
                         />
                     </CardContent>
                 </Card>
             ) : (
-                // 閲覧モード時は既存のコンポーネントを利用
                 <ReportCopySection title="生成された日報" content={report.content_polished} />
             )}
 
