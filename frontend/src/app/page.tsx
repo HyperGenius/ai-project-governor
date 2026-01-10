@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { ReportActionArea } from '@/components/dashboard/ReportActionArea'
 import { ReportList } from '@/components/dashboard/ReportList'
+import { ProjectList } from '@/components/dashboard/ProjectList'
 
 /**
  * メインページ
@@ -42,10 +43,13 @@ export default async function Home() {
           tenantId={tenant?.id}
         />
 
-        {/* アクションエリア */}
+        {/* アクションエリア (日報作成) */}
         <ReportActionArea />
 
-        {/* リストエリア (アクセストークンを渡す) */}
+        {/* ★追加: プロジェクト一覧エリア */}
+        <ProjectList accessToken={session.access_token} />
+
+        {/* 日報リストエリア */}
         <ReportList accessToken={session.access_token} />
 
       </div>
