@@ -2,7 +2,14 @@
 from pydantic import BaseModel, Field
 from uuid import UUID
 from datetime import datetime, date
-from typing import Optional
+from typing import List, Optional
+
+
+class WorkLogExtraction(BaseModel):
+    """AIが推論したタスク別工数"""
+
+    task_id: UUID = Field(..., description="該当するタスクのID")
+    hours: float = Field(..., description="推論された作業時間(h)")
 
 
 class DailyReportDraft(BaseModel):
@@ -30,6 +37,9 @@ class DailyReportPolished(BaseModel):
         json_schema_extra={"example": "サーバー落ちた。復旧作業中。"},
     )
     politeness_level: int = Field(..., description="丁寧さレベル(1-5)", ge=1, le=5)
+    work_logs: List[WorkLogExtraction] = Field(
+        default=[], description="タスクごとの工数配分"
+    )
 
 
 class DailyReportResponse(BaseModel):
