@@ -1,5 +1,5 @@
 /* frontend/src/services/projects.ts */
-import { TaskDraft, Profile, Project } from '@/types'
+import { Profile, Project, TaskDraft, Task } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL + '/api/v1'
 
@@ -58,5 +58,38 @@ export async function getProjects(token: string): Promise<Project[]> {
         return []
     }
 
+    return res.json()
+}
+
+/**
+ * プロジェクト詳細を取得する
+ */
+export async function getProjectById(token: string, projectId: string): Promise<Project | null> {
+    const res = await fetch(`${API_BASE}/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    })
+
+    if (!res.ok) return null
+    return res.json()
+}
+
+/**
+ * タスクのステータス等を更新する
+ */
+export async function updateTask(
+    token: string,
+    taskId: string,
+    data: { status?: string; assigned_to?: string }
+): Promise<Task | null> {
+    const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(data),
+    })
+
+    if (!res.ok) return null
     return res.json()
 }

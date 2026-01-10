@@ -46,7 +46,7 @@ export default async function Home() {
         {/* アクションエリア (日報作成) */}
         <ReportActionArea />
 
-        {/* ★追加: プロジェクト一覧エリア */}
+        {/* プロジェクト一覧エリア */}
         <ProjectList accessToken={session.access_token} />
 
         {/* 日報リストエリア */}
