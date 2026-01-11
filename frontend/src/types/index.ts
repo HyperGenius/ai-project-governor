@@ -9,6 +9,7 @@ export type Report = {
     politeness_level: number
     report_date: string
     created_at: string
+    task_work_logs: WorkLog[]
 }
 
 // プロフィール
@@ -51,4 +52,21 @@ export type Project = {
     milestones: string | null
     created_at: string
     tasks: Task[] // 詳細情報を含むTask型に変更
+}
+
+// 自分の担当タスク（入力補助用）
+export type ActiveTask = {
+    id: string
+    title: string
+    project_name: string
+}
+
+// 工数ログ
+export type WorkLog = {
+    id: string
+    task_id: string
+    hours: number
+    tasks: {
+        title: string
+    }
 }

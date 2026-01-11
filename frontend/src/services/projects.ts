@@ -1,5 +1,5 @@
 /* frontend/src/services/projects.ts */
-import { Profile, Project, TaskDraft, Task } from '@/types'
+import { Profile, Project, TaskDraft, Task, ActiveTask } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL + '/api/v1'
 
@@ -91,5 +91,17 @@ export async function updateTask(
     })
 
     if (!res.ok) return null
+    return res.json()
+}
+
+/**
+ * 自分の仕掛中タスク一覧を取得する
+ */
+export async function getMyActiveTasks(token: string): Promise<ActiveTask[]> {
+    const res = await fetch(`${API_BASE}/tasks/my-active`, {
+        headers: { Authorization: `Bearer ${token}` },
+    })
+
+    if (!res.ok) return []
     return res.json()
 }

@@ -1,92 +1,64 @@
 /* frontend/src/services/reports.ts */
 import { Report } from '@/types'
 
-/**
- * APIから日報一覧を取得する
- * @param accessToken API認証用のアクセストークン
- */
-export async function getReports(accessToken: string): Promise<Report[]> {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reports`, {
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
-        cache: 'no-store',
-    })
+const API_BASE = process.env.NEXT_PUBLIC_API_URL + '/api/v1'
 
-    if (!res.ok) {
-        console.error('Failed to fetch reports')
-        // 必要に応じてエラーをthrowする、あるいは空配列を返す
-        return []
-    }
-
-    return res.json()
+type CreateReportDraft = {
+    raw_content: string
+    politeness_level: number
 }
 
 /**
- * 指定されたIDの日報詳細を取得する
- * @param id 日報ID
- * @param accessToken API認証用のアクセストークン
+ * 日報を新規作成する (AI生成含む)
  */
-export async function getReportById(id: string, accessToken: string): Promise<Report | null> {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reports/${id}`, {
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
-        // 毎回最新を取得
-        cache: 'no-store',
-    })
-
-    if (res.status === 404) {
-        return null
-    }
-
-    if (!res.ok) {
-        console.error(`Failed to fetch report ${id}`)
-        // エラーページへ飛ばすなどの処理も検討可能ですが、一旦nullで返す
-        return null
-    }
-
-    return res.json()
-}
-
-/**
- * 指定されたIDの日報を削除する
- * @param id 日報ID
- * @param accessToken API認証用のアクセストークン
- */
-export async function deleteReport(id: string, accessToken: string): Promise<boolean> {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reports/${id}`, {
-        method: 'DELETE',
-        headers: {
-            Authorization: `Bearer ${accessToken}`,
-        },
-    })
-
-    return res.ok
-}
-
-/**
- * 日報を更新する
- * @param id 日報ID
- * @param accessToken トークン
- * @param data 更新するデータ（件名、本文）
- */
-export async function updateReport(
-    id: string,
-    accessToken: string,
-    data: { subject?: string; content_polished?: string }
-): Promise<Report | null> {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reports/${id}`, {
-        method: 'PUT',
+export async function createReport(token: string, draft: CreateReportDraft): Promise<Report> {
+    const res = await fetch(`${API_BASE}/reports`, {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(draft),
     })
 
     if (!res.ok) {
-        return null
+        throw new Error('日報の作成に失敗しました')
+    }
+
+    return res.json()
+}
+
+/**
+ * 日報一覧を取得する (Dashboard用)
+ * ※ SWRを使う場合は fetcher を直接使うことも多いですが、
+ * SSRや別の場所で使うためにサービス関数としても用意しておくと便利です
+ */
+export async function getReports(token: string): Promise<Report[]> {
+    const res = await fetch(`${API_BASE}/reports`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    })
+
+    if (!res.ok) {
+        throw new Error('日報一覧の取得に失敗しました')
+    }
+
+    return res.json()
+}
+
+/**
+ * 日報詳細を取得する
+ */
+export async function getReportById(token: string, id: string): Promise<Report> {
+    const res = await fetch(`${API_BASE}/reports/${id}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    })
+
+    if (!res.ok) {
+        throw new Error('日報詳細の取得に失敗しました')
     }
 
     return res.json()

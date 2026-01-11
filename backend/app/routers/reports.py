@@ -120,12 +120,12 @@ async def get_reports(
     supabase: Client = Depends(get_supabase),
 ):
     """
-    ログインユーザーの日報一覧を取得する
+    ログインユーザーの日報一覧を工数ログ付きで取得する
     """
     # 自分のIDでフィルタリングし、作成日の新しい順に取得
     res = (
         supabase.table(TABLE_DAILY_REPORTS)
-        .select("*")
+        .select("*, task_work_logs(*, tasks(title))")
         .eq(COL_USER_ID, current_user.id)
         .order(COL_CREATED_AT, desc=True)
         .execute()
@@ -148,7 +148,7 @@ async def get_report_detail(
     # ID指定かつ、自分のuser_idにマッチするものだけを取得
     res = (
         supabase.table(TABLE_DAILY_REPORTS)
-        .select("*")
+        .select("*, task_work_logs(*, tasks(title))")
         .eq(COL_ID, str(report_id))
         .eq(COL_USER_ID, current_user.id)
         .single()

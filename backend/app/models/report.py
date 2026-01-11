@@ -12,6 +12,15 @@ class WorkLogExtraction(BaseModel):
     hours: float = Field(..., description="推論された作業時間(h)")
 
 
+class WorkLogResponse(BaseModel):
+    """DBから取得した工数ログデータ"""
+
+    id: UUID
+    task_id: UUID
+    hours: float
+    tasks: Optional[dict] = None  # join先のタスク情報を受け取るため
+
+
 class DailyReportDraft(BaseModel):
     """ユーザーが入力する下書き"""
 
@@ -56,6 +65,8 @@ class DailyReportResponse(BaseModel):
 
     report_date: date
     created_at: datetime
+
+    task_work_logs: List[WorkLogResponse] = []  # 工数ログのリスト
 
 
 class DailyReportUpdate(BaseModel):

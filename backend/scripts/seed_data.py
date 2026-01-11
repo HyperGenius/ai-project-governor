@@ -17,13 +17,13 @@ def seed():
     """Supabaseにシードデータを投入する"""
 
     TEST_EMAIL = os.getenv("TEST_EMAIL", "test@example.com")
-    TEST_PASSWORD = os.getenv("TEST_PASSWORD", "TestP@ssword1234!")
+    TEST_PASSWD = os.getenv("TEST_PASSWD", "TestP@ssword1234!")
     TEST_TENANT_NAME = os.getenv("TEST_TENANT_NAME", "Demo Corp")
 
     print("🌱 シードデータの投入を開始します...")
 
     print("   1. Userを作成中...")
-    user_id = _create_user(TEST_EMAIL, TEST_PASSWORD)
+    user_id = _create_user(TEST_EMAIL, TEST_PASSWD)
 
     print("   2. Tenantを作成中...")
     tenant_id = _create_tenant(TEST_TENANT_NAME)

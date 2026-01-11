@@ -21,6 +21,40 @@ class ActiveTaskResponse(BaseModel):
     project_name: str  # プロジェクト名もあったほうが分かりやすい
 
 
+@router.get("/tasks/my-active", response_model=List[ActiveTaskResponse])
+async def get_my_active_tasks(
+    current_user: User = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """
+    自分の仕掛中タスク一覧を取得する（完了済みは除く）
+    """
+    # tasksテーブルとprojectsテーブルをJOIN
+    res = (
+        supabase.table(TABLE_TASKS)
+        .select("id, title, projects(name)")
+        .eq("assigned_to", current_user.id)
+        .neq("status", "done")  # 完了以外
+        .order("created_at", desc=True)
+        .execute()
+    )
+
+    # 整形して返す
+    tasks = []
+    for item in res.data:
+        tasks.append(
+            {
+                "id": item["id"],  # type: ignore
+                "title": item["title"],  # type: ignore
+                "project_name": (
+                    item["projects"]["name"] if item["projects"] else "Unknown"  # type: ignore
+                ),
+            }
+        )
+
+    return tasks
+
+
 @router.patch("/tasks/{task_id}", response_model=TaskResponse)
 async def update_task(
     task_id: UUID,
@@ -55,37 +89,3 @@ async def update_task(
         )
 
     return res.data[0]
-
-
-@router.get("/tasks/my-active", response_model=List[ActiveTaskResponse])
-async def get_my_active_tasks(
-    current_user: User = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase),
-):
-    """
-    自分の仕掛中タスク一覧を取得する（完了済みは除く）
-    """
-    # tasksテーブルとprojectsテーブルをJOIN
-    res = (
-        supabase.table(TABLE_TASKS)
-        .select("id, title, projects(name)")
-        .eq("assigned_to", current_user.id)
-        .neq("status", "done")  # 完了以外
-        .order("created_at", desc=True)
-        .execute()
-    )
-
-    # 整形して返す
-    tasks = []
-    for item in res.data:
-        tasks.append(
-            {
-                "id": item["id"],  # type: ignore
-                "title": item["title"],  # type: ignore
-                "project_name": (
-                    item["projects"]["name"] if item["projects"] else "Unknown"  # type: ignore
-                ),
-            }
-        )
-
-    return tasks
