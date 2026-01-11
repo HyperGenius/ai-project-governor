@@ -43,7 +43,7 @@ export function DeleteReportButton({ reportId }: DeleteReportButtonProps) {
                 return
             }
 
-            const success = await deleteReport(reportId, session.access_token)
+            const success = await deleteReport(session.access_token, reportId)
             if (!success) {
                 throw new Error('削除に失敗しました')
             }
