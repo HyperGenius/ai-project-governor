@@ -71,8 +71,31 @@ export function GanttChart({ tasks, onTaskUpdate }: GanttChartProps) {
                     onDateChange={handleTaskChange} // ドラッグでの期間変更
                     locale="ja"
                     listCellWidth="155px" // タスク名カラムの幅
-                    columnWidth={60}
+                    columnWidth={50}
                     barFill={60}
+                    // カスタムヘッダー＆テーブル (From/Toを非表示)
+                    TaskListHeader={({ headerHeight }) => (
+                        <div
+                            style={{ height: headerHeight }}
+                            className="flex items-center px-4 font-bold text-sm bg-gray-50 border-r border-b"
+                        >
+                            タスク名
+                        </div>
+                    )}
+                    TaskListTable={({ rowHeight, tasks, fontFamily, fontSize }) => (
+                        <div style={{ fontFamily, fontSize }} className="border-r">
+                            {tasks.map((t) => (
+                                <div
+                                    key={t.id}
+                                    style={{ height: rowHeight }}
+                                    className="flex items-center px-4 text-sm border-b truncate hover:bg-gray-50 transition-colors"
+                                    title={t.name}
+                                >
+                                    {t.name}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 />
             </div>
         </div>
