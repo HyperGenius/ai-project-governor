@@ -70,3 +70,12 @@ export type WorkLog = {
         title: string
     }
 }
+
+// 週報
+export type WeeklyReport = {
+    id: string
+    content: string
+    week_start_date: string
+    week_end_date: string
+    created_at: string
+}
