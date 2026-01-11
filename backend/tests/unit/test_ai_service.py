@@ -129,8 +129,11 @@ class TestAIService(unittest.IsolatedAsyncioTestCase):
         # 入力データ
         raw_content = "API作った。2.5時間くらい。"
         active_tasks = [{"id": str(test_task_id), "title": "API実装タスク"}]
+        ai_settings = {"tone": "professional", "custom_instructions": ""}
 
-        result = await service.generate_report_with_logs(raw_content, 5, active_tasks)
+        result = await service.generate_report_with_logs(
+            raw_content, 5, active_tasks, ai_settings
+        )
 
         # --- 3. 検証 ---
         self.assertIsInstance(result, DailyReportPolished)
@@ -164,10 +167,81 @@ class TestAIService(unittest.IsolatedAsyncioTestCase):
         active_tasks = [{"id": str(uuid4()), "title": "別のタスク"}]
 
         result = await service.generate_report_with_logs(
-            "メール返信した", 5, active_tasks
+            "メール返信した", 5, active_tasks, None
         )
 
         self.assertEqual(len(result.work_logs), 0)
+
+    @patch("app.services.ai_service.genai.Client")
+    async def test_generate_report_with_custom_tone(self, MockClient):
+        """正常系: カスタムAI設定でトーンが適用される"""
+
+        mock_client_instance = MockClient.return_value
+        mock_response = MagicMock()
+
+        # 簡潔トーンで生成されたと想定される日報
+        expected_response_obj = DailyReportPolished(
+            subject="API実装完了",
+            content_polished="- API実装を完了した。\n- テストも実施済み。",
+            politeness_level=3,
+            work_logs=[],
+        )
+
+        mock_response.parsed = expected_response_obj
+        mock_client_instance.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        service = AIService()
+        # 簡潔トーンのAI設定
+        ai_settings = {"tone": "concise", "custom_instructions": ""}
+
+        result = await service.generate_report_with_logs(
+            "API実装とテスト", 3, [], ai_settings
+        )
+
+        # トーンが適用されたことを確認（簡潔な表現になっている）
+        self.assertIsInstance(result, DailyReportPolished)
+        # API呼び出し時にカスタムプロンプトが使用されたことを確認
+        mock_client_instance.aio.models.generate_content.assert_called_once()
+        call_args = mock_client_instance.aio.models.generate_content.call_args
+        # contentsパラメータにトーン指示が含まれていることを確認
+        self.assertIn("contents", call_args[1])
+
+    @patch("app.services.ai_service.genai.Client")
+    async def test_generate_report_with_custom_instructions(self, MockClient):
+        """正常系: カスタム指示が適用される"""
+
+        mock_client_instance = MockClient.return_value
+        mock_response = MagicMock()
+
+        expected_response_obj = DailyReportPolished(
+            subject="【報告】API開発進捗",
+            content_polished="本日はREST APIの開発を進めました。",
+            politeness_level=3,
+            work_logs=[],
+        )
+
+        mock_response.parsed = expected_response_obj
+        mock_client_instance.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        service = AIService()
+        # カスタム指示付きのAI設定
+        ai_settings = {
+            "tone": "professional",
+            "custom_instructions": "技術用語を積極的に使用してください",
+        }
+
+        result = await service.generate_report_with_logs(
+            "API開発", 3, [], ai_settings
+        )
+
+        self.assertIsInstance(result, DailyReportPolished)
+        # カスタム指示が適用されていることを確認
+        mock_client_instance.aio.models.generate_content.assert_called_once()
+
 
     @patch("app.services.ai_service.genai.Client")
     async def test_generate_weekly_summary_success(self, MockClient):

@@ -3,8 +3,9 @@
 
 import { Button } from '@/components/ui/button'
 import { signOut } from '@/actions/auth'
-import { Copy, Users } from 'lucide-react'
+import { Copy, Users, Settings } from 'lucide-react'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
 type DashboardHeaderProps = {
     userEmail: string | undefined
@@ -54,6 +55,18 @@ export function DashboardHeader({ userEmail, tenantName, tenantId }: DashboardHe
                         招待コード
                     </Button>
                 )}
+
+                <Link href="/settings">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-gray-600"
+                        title="AI設定"
+                    >
+                        <Settings className="mr-2 h-3 w-3" />
+                        AI設定
+                    </Button>
+                </Link>
 
                 <form action={signOut}>
                     <Button variant="ghost" size="sm" className="text-red-600 hover:bg-red-50">

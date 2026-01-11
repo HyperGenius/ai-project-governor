@@ -1,8 +1,8 @@
 # backend/app/models/project.py
-from pydantic import BaseModel, Field
-from typing import List, Optional
-from uuid import UUID
 from datetime import date, datetime
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 # --- AI生成用スキーマ ---
@@ -13,7 +13,7 @@ class WBSRequest(BaseModel):
     description: str
     start_date: str
     end_date: str
-    milestones: Optional[str] = None
+    milestones: str | None = None
 
 
 class WBSTask(BaseModel):
@@ -30,7 +30,7 @@ class WBSTask(BaseModel):
 class WBSResponse(BaseModel):
     """AIからの応答構造"""
 
-    tasks: List[WBSTask]
+    tasks: list[WBSTask]
 
 
 # --- DB保存・API用スキーマ ---
@@ -39,21 +39,21 @@ class WBSResponse(BaseModel):
 class TaskCreate(WBSTask):
     """タスク作成用（AI生成結果 + ユーザー調整）"""
 
-    assigned_to: Optional[UUID] = None  # ユーザーがアサインする場合
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    assigned_to: UUID | None = None  # ユーザーがアサインする場合
+    start_date: date | None = None
+    end_date: date | None = None
 
 
 class ProjectCreate(BaseModel):
     """プロジェクト作成用（全体保存）"""
 
     name: str
-    description: Optional[str] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    milestones: Optional[str] = None
+    description: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    milestones: str | None = None
     # 作成時にタスクも一括で保存する
-    tasks: List[TaskCreate]
+    tasks: list[TaskCreate]
 
 
 class TaskResponse(TaskCreate):
@@ -72,22 +72,22 @@ class ProjectResponse(BaseModel):
     id: UUID
     tenant_id: UUID
     name: str
-    description: Optional[str]
+    description: str | None
     status: str
-    start_date: Optional[date]
-    end_date: Optional[date]
-    milestones: Optional[str]
+    start_date: date | None
+    end_date: date | None
+    milestones: str | None
     created_at: datetime
     # リスト表示などでタスクを含める場合
-    tasks: Optional[List[TaskResponse]] = []
+    tasks: list[TaskResponse] | None = []
 
 
 class TaskUpdate(BaseModel):
     """タスク更新用スキーマ"""
 
-    title: Optional[str] = None
-    description: Optional[str] = None
-    status: Optional[str] = None  # 'todo', 'in_progress', 'done'
-    assigned_to: Optional[UUID] = None  # 担当者変更用
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None  # 'todo', 'in_progress', 'done'
+    assigned_to: UUID | None = None  # 担当者変更用
+    start_date: date | None = None
+    end_date: date | None = None

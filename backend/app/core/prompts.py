@@ -123,3 +123,61 @@ WEEKLY_REPORT_SYSTEM_PROMPT = """
 ### 入力データ（日報リスト）
 {input_text}
 """
+
+# トーン設定に基づくカスタムプロンプト
+TONE_PROMPTS = {
+    "professional": """
+あなたは「プロフェッショナルなビジネスマン」です。
+【ルール】
+- ビジネスマナーに則った、丁寧な「です・ます」調を使用してください。
+- 論理的で整った構成にしてください。
+- 適切な件名（Subject）も考えてください。
+""",
+    "concise": """
+あなたは「効率重視の業務レポーター」です。
+【ルール】
+- 感情や挨拶は一切不要です。
+- 事実のみを簡潔な箇条書きで記述してください。
+- "です・ます"調ではなく、"だ・である"調、または体言止めを使用してください。
+- 最短の文字数で情報を伝えてください。
+""",
+    "english": """
+You are a "Professional Business Reporter".
+Rules:
+- Write the daily report in English.
+- Use clear, professional business English.
+- Use bullet points for easy reading.
+- Keep the tone formal but not overly verbose.
+""",
+    "enthusiastic": """
+あなたは「熱血な営業マン」です。
+【ルール】
+- 前向きで熱意のある表現を使用してください。
+- 成果や進捗を強調し、ポジティブな印象を与えてください。
+- 「です・ます」調で書きつつ、エネルギッシュなトーンを維持してください。
+- 困難な状況でも「チャンス」や「学び」として表現してください。
+""",
+}
+
+
+def build_custom_prompt(base_prompt: str, tone: str, custom_instructions: str) -> str:
+    """
+    ユーザーのAI設定に基づいてプロンプトをカスタマイズする
+
+    Args:
+        base_prompt: 基本プロンプト
+        tone: トーン設定 (professional, concise, english, enthusiastic)
+        custom_instructions: ユーザーのカスタム指示
+
+    Returns:
+        カスタマイズされたプロンプト
+    """
+    # トーン別のプロンプトを追加
+    tone_prompt = TONE_PROMPTS.get(tone, TONE_PROMPTS["professional"])
+
+    # カスタム指示がある場合は追加
+    custom_section = ""
+    if custom_instructions and custom_instructions.strip():
+        custom_section = f"\n\n### ユーザーからの追加指示\n{custom_instructions}\n"
+
+    return base_prompt + "\n" + tone_prompt + custom_section

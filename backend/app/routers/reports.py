@@ -1,11 +1,21 @@
 # backend/app/routers/reports.py
-from fastapi import APIRouter, Depends, HTTPException
-from supabase import Client
-from gotrue.types import User
-from typing import List
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException
+from gotrue.types import User
+from supabase import Client
+
 from app.api.deps import get_current_user
+from app.core.constants import (
+    COL_CREATED_AT,
+    COL_ID,
+    COL_TENANT_ID,
+    COL_USER_ID,
+    TABLE_DAILY_REPORTS,
+    TABLE_PROFILES,
+    TABLE_TASK_WORK_LOGS,
+    TABLE_TASKS,
+)
 from app.db.client import get_supabase
 from app.models.report import (
     DailyReportDraft,
@@ -14,16 +24,6 @@ from app.models.report import (
     DailyReportUpdate,
 )
 from app.services.ai_service import AIService
-from app.core.constants import (
-    TABLE_PROFILES,
-    TABLE_DAILY_REPORTS,
-    TABLE_TASKS,
-    TABLE_TASK_WORK_LOGS,
-    COL_ID,
-    COL_USER_ID,
-    COL_TENANT_ID,
-    COL_CREATED_AT,
-)
 
 router = APIRouter()
 
@@ -40,10 +40,10 @@ async def create_report(
     さらに、AIが推論した工数ログも保存する。
     """
 
-    # 1. ユーザーの所属テナントを取得
+    # 1. ユーザーの所属テナントとAI設定を取得
     profile_res = (
         supabase.table(TABLE_PROFILES)
-        .select(COL_TENANT_ID)
+        .select(f"{COL_TENANT_ID}, ai_settings")
         .eq(COL_ID, current_user.id)
         .single()
         .execute()
@@ -52,6 +52,7 @@ async def create_report(
         raise HTTPException(status_code=400, detail="Profile not found")
 
     tenant_id = profile_res.data[COL_TENANT_ID]  # type: ignore
+    ai_settings = profile_res.data.get("ai_settings")  # type: ignore
 
     # 2. ユーザーのアクティブタスクを取得 (AIへのコンテキスト用)
     # ※ tasks.py で作ったAPIロジックと同等だが、内部呼び出し用に直接クエリする
@@ -64,10 +65,10 @@ async def create_report(
     )
     active_tasks = tasks_res.data or []
 
-    # 3. AI変換の実行 (タスクリストを渡す)
+    # 3. AI変換の実行 (タスクリストとAI設定を渡す)
     ai_service = AIService()
     polished_result = await ai_service.generate_report_with_logs(
-        draft.raw_content, draft.politeness_level, active_tasks
+        draft.raw_content, draft.politeness_level, active_tasks, ai_settings
     )
 
     # 4. 日報本体のDB保存
@@ -114,7 +115,7 @@ async def create_report(
 
 
 # --- 一覧取得API ---
-@router.get("/reports", response_model=List[DailyReportResponse])
+@router.get("/reports", response_model=list[DailyReportResponse])
 async def get_reports(
     current_user: User = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),

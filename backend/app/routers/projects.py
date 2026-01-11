@@ -1,26 +1,26 @@
 # backend/app/routers/projects.py
-from fastapi import APIRouter, Depends, HTTPException
-from supabase import Client
-from gotrue.types import User
-from typing import List
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException
+from gotrue.types import User
+from supabase import Client
+
 from app.api.deps import get_current_user
+from app.core.constants import (
+    COL_ID,
+    COL_TENANT_ID,
+    TABLE_PROFILES,
+    TABLE_PROJECTS,
+    TABLE_TASKS,
+)
 from app.db.client import get_supabase
-from app.services.ai_service import AIService
 from app.models.project import (
     ProjectCreate,
     ProjectResponse,
     WBSRequest,
     WBSResponse,
 )
-from app.core.constants import (
-    TABLE_PROFILES,
-    TABLE_PROJECTS,
-    TABLE_TASKS,
-    COL_ID,
-    COL_TENANT_ID,
-)
+from app.services.ai_service import AIService
 
 router = APIRouter()
 
@@ -103,7 +103,7 @@ async def create_project(
 
 
 # --- プロジェクト一覧取得API ---
-@router.get("/projects", response_model=List[ProjectResponse])
+@router.get("/projects", response_model=list[ProjectResponse])
 async def get_projects(
     current_user: User = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),
