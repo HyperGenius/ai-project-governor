@@ -1,15 +1,22 @@
 /* frontend/src/app/reports/new/page.tsx */
 'use client'
 
+import { useEffect } from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { createReport } from '@/services/reports'
+import { getMyActiveTasks } from '@/services/projects'
+import { ActiveTask } from '@/types'
+
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Slider } from '@/components/ui/slider'
+import { Loader2, Plus, Briefcase } from 'lucide-react'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
 
 // 丁寧度の説明マップ
 const LEVEL_DESCRIPTIONS: Record<number, string> = {
@@ -26,122 +33,135 @@ const LEVEL_DESCRIPTIONS: Record<number, string> = {
  */
 export default function NewReportPage() {
     const router = useRouter()
-    const [content, setContent] = useState('')
-    const [politenessLevel, setPolitenessLevel] = useState(3)
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [content, setContent] = useState('')
+    const [politeness, setPoliteness] = useState(5)
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
+    // タスク一覧の状態
+    const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([])
+
+    // 初期化時にタスク一覧を取得
+    useEffect(() => {
+        const init = async () => {
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+                const tasks = await getMyActiveTasks(session.access_token)
+                setActiveTasks(tasks)
+            }
+        }
+        init()
+    }, [])
+
+    const handleSubmit = async () => {
+        if (!content.trim()) return
+
         setLoading(true)
-        setError(null)
-
         try {
-            // 1. JWTトークンの取得
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
 
             if (!session) {
-                throw new Error('認証セッションが見つかりません。ログインしてください。')
+                router.push('/login')
+                return
             }
 
-            const token = session.access_token
-
-            // 2. バックエンドAPIへの送信
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/reports`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // ここで認証情報を渡す
-                },
-                body: JSON.stringify({
-                    raw_content: content,
-                    politeness_level: politenessLevel
-                })
+            // 作成APIをコール
+            await createReport(session.access_token, {
+                raw_content: content,
+                politeness_level: politeness
             })
 
-            if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.detail || '日報の作成に失敗しました')
-            }
-
-            // 3. 成功したらトップページへ戻る
+            toast.success('日報を作成しました！')
             router.push('/')
-            router.refresh() // データを再取得させるためリフレッシュ
-
-        } catch (err: any) {
-            console.error(err)
-            setError(err.message)
+        } catch (error) {
+            toast.error('作成に失敗しました')
+            console.error(error)
         } finally {
             setLoading(false)
         }
     }
 
+    // タスクチップクリック時のハンドラ
+    const insertTask = (taskTitle: string) => {
+        // カーソル位置への挿入などは省略し、末尾に追加する簡易実装
+        const textToAdd = `\n- 【${taskTitle}】に取り組んだ。`
+        setContent(prev => prev + textToAdd)
+    }
+
     return (
-        <div className="container mx-auto max-w-2xl py-10 px-4">
+        <div className="container max-w-2xl py-10 px-4 mx-auto">
             <Card>
                 <CardHeader>
-                    <CardTitle>日報の作成</CardTitle>
-                    <CardDescription>
-                        今日の業務内容やトラブルを箇条書きで入力してください。<br />
-                        AIが失礼のないビジネスメール形式に変換して登録します。
-                    </CardDescription>
+                    <CardTitle>日報を作成</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <CardContent className="space-y-6">
 
-                        {error && (
-                            <Alert variant="destructive">
-                                <AlertTitle>エラー</AlertTitle>
-                                <AlertDescription>{error}</AlertDescription>
-                            </Alert>
-                        )}
-                        {/* --- 丁寧度スライダー --- */}
-                        <div className="space-y-4 pt-2">
-                            <div className="flex justify-between items-center">
-                                <Label className="text-base font-bold">丁寧さレベル: {politenessLevel}</Label>
-                            </div>
-
-                            <Slider
-                                defaultValue={[3]}
-                                max={5}
-                                min={1}
-                                step={1}
-                                value={[politenessLevel]}
-                                onValueChange={(vals) => setPolitenessLevel(vals[0])}
-                                className="py-4"
-                            />
-
-                            <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-md text-sm font-medium">
-                                {LEVEL_DESCRIPTIONS[politenessLevel]}
-                            </div>
-                        </div>
-
-                        {/* --- 本文入力 --- */}
+                    {/* タスク入力補助エリア */}
+                    {activeTasks.length > 0 && (
                         <div className="space-y-2">
-                            <Textarea
-                                placeholder="例：&#13;&#10;- A社の案件、進捗80%。明日完了予定。&#13;&#10;- サーバーが一時停止した。原因調査中。&#13;&#10;- 部長の承認待ちで作業ストップしてます。"
-                                className="min-h-[200px] text-base"
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                required
-                            />
+                            <Label className="text-xs text-gray-500">
+                                <Briefcase className="w-3 h-3 inline mr-1" />
+                                担当タスク（クリックで挿入）
+                            </Label>
+                            <div className="flex flex-wrap gap-2">
+                                {activeTasks.map(task => (
+                                    <Badge
+                                        key={task.id}
+                                        variant="outline"
+                                        className="cursor-pointer hover:bg-blue-50 hover:text-blue-600 transition-colors py-1 px-3"
+                                        onClick={() => insertTask(task.title)}
+                                    >
+                                        <Plus className="w-3 h-3 mr-1" />
+                                        {task.title}
+                                    </Badge>
+                                ))}
+                            </div>
                         </div>
+                    )}
 
-                        <div className="flex justify-end gap-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => router.back()}
-                                disabled={loading}
-                            >
-                                キャンセル
-                            </Button>
-                            <Button type="submit" disabled={loading || !content.trim()}>
-                                {loading ? 'AIが執筆中...' : '日報を作成する'}
-                            </Button>
+                    <div className="space-y-2">
+                        <Label>今日の業務内容（箇条書きでOK）</Label>
+                        <Textarea
+                            placeholder="・〇〇機能の実装をした&#13;&#10;・設計についてXXさんと相談した"
+                            className="h-48 resize-none text-base"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="space-y-4">
+                        <div className="flex justify-between">
+                            <Label>AI補正レベル (丁寧さ)</Label>
+                            <span className="text-sm font-bold text-blue-600">Level {politeness}</span>
                         </div>
-                    </form>
+                        <Slider
+                            defaultValue={[5]}
+                            max={5}
+                            min={1}
+                            step={1}
+                            onValueChange={(vals) => setPoliteness(vals[0])}
+                        />
+                        <p className="text-xs text-gray-500 text-right">
+                            {politeness === 5 ? '最大（JTC準拠）' : politeness === 1 ? '最小（そのまま）' : '標準'}
+                        </p>
+                    </div>
+
+                    <Button
+                        className="w-full font-bold"
+                        size="lg"
+                        onClick={handleSubmit}
+                        disabled={loading || !content.trim()}
+                    >
+                        {loading ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                AIが清書中...
+                            </>
+                        ) : (
+                            '日報を作成する'
+                        )}
+                    </Button>
                 </CardContent>
             </Card>
         </div>

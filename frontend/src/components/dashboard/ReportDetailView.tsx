@@ -49,7 +49,7 @@ function useReportEditor(report: Report, accessToken: string) {
     const saveReport = async () => {
         setLoading(true)
         try {
-            const updated = await updateReport(report.id, accessToken, {
+            const updated = await updateReport(accessToken, report.id, {
                 subject: formData.subject,
                 content_polished: formData.content
             })

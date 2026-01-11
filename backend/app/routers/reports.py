@@ -17,6 +17,8 @@ from app.services.ai_service import AIService
 from app.core.constants import (
     TABLE_PROFILES,
     TABLE_DAILY_REPORTS,
+    TABLE_TASKS,
+    TABLE_TASK_WORK_LOGS,
     COL_ID,
     COL_USER_ID,
     COL_TENANT_ID,
@@ -34,10 +36,11 @@ async def create_report(
     supabase: Client = Depends(get_supabase),
 ):
     """
-    日報を作成し、AI変換を行ってDBに保存する
+    日報を作成し、AI変換を行ってDBに保存する。
+    さらに、AIが推論した工数ログも保存する。
     """
 
-    # 1. ユーザーの所属テナントを取得 (Profilesテーブル参照)
+    # 1. ユーザーの所属テナントを取得
     profile_res = (
         supabase.table(TABLE_PROFILES)
         .select(COL_TENANT_ID)
@@ -45,38 +48,67 @@ async def create_report(
         .single()
         .execute()
     )
-
     if not profile_res.data:
-        raise HTTPException(
-            status_code=400, detail="User profile not found. Please contact admin."
-        )
+        raise HTTPException(status_code=400, detail="Profile not found")
 
     tenant_id = profile_res.data[COL_TENANT_ID]  # type: ignore
-    politeness_level = draft.politeness_level
 
-    # 2. AI変換の実行
+    # 2. ユーザーのアクティブタスクを取得 (AIへのコンテキスト用)
+    # ※ tasks.py で作ったAPIロジックと同等だが、内部呼び出し用に直接クエリする
+    tasks_res = (
+        supabase.table(TABLE_TASKS)
+        .select("id, title")
+        .eq("assigned_to", current_user.id)
+        .neq("status", "done")
+        .execute()
+    )
+    active_tasks = tasks_res.data or []
+
+    # 3. AI変換の実行 (タスクリストを渡す)
     ai_service = AIService()
-    polished_result = await ai_service.generate_polished_report(
-        draft.raw_content, politeness_level
+    polished_result = await ai_service.generate_report_with_logs(
+        draft.raw_content, draft.politeness_level, active_tasks
     )
 
-    # 3. DBへ保存
-    # DBのカラム名に合わせてデータを整形
-    print("politeness_level: ", polished_result.politeness_level)
+    # 4. 日報本体のDB保存
     report_data = {
         COL_USER_ID: current_user.id,
         COL_TENANT_ID: tenant_id,
         "content_raw": draft.raw_content,
         "content_polished": polished_result.content_polished,
         "subject": polished_result.subject,
-        "politeness_level": politeness_level,
-        # created_at はDB側でデフォルト値が入る設定なら不要
+        "politeness_level": draft.politeness_level,
     }
-
     insert_res = supabase.table(TABLE_DAILY_REPORTS).insert(report_data).execute()
 
     if not insert_res.data:
-        raise HTTPException(status_code=500, detail="Failed to save report to database")
+        raise HTTPException(status_code=500, detail="Failed to save report")
+
+    new_report_id = insert_res.data[0]["id"]  # type: ignore
+
+    # 5. 工数ログの一括保存
+    if polished_result.work_logs:
+        logs_data = []
+        for log in polished_result.work_logs:
+            # AIがハルシネーションで存在しないIDを返す可能性を考慮して
+            # active_tasks に含まれるIDかチェックしても良いが、
+            # 外部キー制約があるのでDB側でエラーになる。ここではそのままトライする。
+            logs_data.append(
+                {
+                    "tenant_id": tenant_id,
+                    "daily_report_id": new_report_id,
+                    "task_id": str(log.task_id),
+                    "hours": log.hours,
+                }
+            )
+
+        if logs_data:
+            try:
+                supabase.table(TABLE_TASK_WORK_LOGS).insert(logs_data).execute()
+            except Exception as e:
+                print(f"Warning: Failed to save work logs: {e}")
+                # ログ保存失敗で日報自体をロールバックするかは要件次第だが、
+                # 今回は日報保存を優先し、ログ失敗は無視（または警告）とする
 
     return polished_result
 
@@ -88,12 +120,12 @@ async def get_reports(
     supabase: Client = Depends(get_supabase),
 ):
     """
-    ログインユーザーの日報一覧を取得する
+    ログインユーザーの日報一覧を工数ログ付きで取得する
     """
     # 自分のIDでフィルタリングし、作成日の新しい順に取得
     res = (
         supabase.table(TABLE_DAILY_REPORTS)
-        .select("*")
+        .select("*, task_work_logs(*, tasks(title))")
         .eq(COL_USER_ID, current_user.id)
         .order(COL_CREATED_AT, desc=True)
         .execute()
@@ -116,7 +148,7 @@ async def get_report_detail(
     # ID指定かつ、自分のuser_idにマッチするものだけを取得
     res = (
         supabase.table(TABLE_DAILY_REPORTS)
-        .select("*")
+        .select("*, task_work_logs(*, tasks(title))")
         .eq(COL_ID, str(report_id))
         .eq(COL_USER_ID, current_user.id)
         .single()

@@ -6,6 +6,7 @@ TABLE_PROFILES = "profiles"
 TABLE_TENANTS = "tenants"
 TABLE_PROJECTS = "projects"
 TABLE_TASKS = "tasks"
+TABLE_TASK_WORK_LOGS = "task_work_logs"
 
 # --- Common Column Names ---
 COL_ID = "id"

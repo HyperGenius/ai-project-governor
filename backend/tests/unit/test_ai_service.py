@@ -1,8 +1,10 @@
 # backend/tests/unit/test_ai_service.py
 import unittest
 from unittest.mock import MagicMock, AsyncMock, patch
+from uuid import uuid4
 from app.services.ai_service import AIService
 from app.models.project import WBSRequest, WBSResponse, WBSTask
+from app.models.report import DailyReportPolished, WorkLogExtraction
 
 
 class TestAIService(unittest.IsolatedAsyncioTestCase):
@@ -96,3 +98,73 @@ class TestAIService(unittest.IsolatedAsyncioTestCase):
         self.assertIsInstance(result, WBSResponse)
         # タスクが空リストであること（クラッシュしていないこと）
         self.assertEqual(result.tasks, [])
+
+    @patch("app.services.ai_service.genai.Client")
+    async def test_generate_report_with_logs_success(self, MockClient):
+        """正常系: 日報生成と同時に工数ログが抽出されるケース"""
+
+        # --- 1. モックの準備 ---
+        mock_client_instance = MockClient.return_value
+        mock_response = MagicMock()
+
+        # テスト用のUUID
+        test_task_id = uuid4()
+
+        # AIが生成すると想定されるデータ
+        expected_response_obj = DailyReportPolished(
+            subject="【日報】API実装完了",
+            content_polished="本日はAPIの実装を行いました。",
+            politeness_level=5,
+            work_logs=[WorkLogExtraction(task_id=test_task_id, hours=2.5)],
+        )
+
+        mock_response.parsed = expected_response_obj
+        mock_client_instance.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        # --- 2. テスト実行 ---
+        service = AIService()
+
+        # 入力データ
+        raw_content = "API作った。2.5時間くらい。"
+        active_tasks = [{"id": str(test_task_id), "title": "API実装タスク"}]
+
+        result = await service.generate_report_with_logs(raw_content, 5, active_tasks)
+
+        # --- 3. 検証 ---
+        self.assertIsInstance(result, DailyReportPolished)
+        self.assertEqual(result.subject, "【日報】API実装完了")
+        # 工数ログが正しくパースされているか
+        self.assertEqual(len(result.work_logs), 1)
+        self.assertEqual(result.work_logs[0].hours, 2.5)
+        self.assertEqual(result.work_logs[0].task_id, test_task_id)
+
+    @patch("app.services.ai_service.genai.Client")
+    async def test_generate_report_with_logs_empty(self, MockClient):
+        """正常系: 該当タスクがなく、工数ログが空の場合"""
+
+        mock_client_instance = MockClient.return_value
+        mock_response = MagicMock()
+
+        expected_response_obj = DailyReportPolished(
+            subject="【日報】雑務",
+            content_polished="メール対応を行いました。",
+            politeness_level=5,
+            work_logs=[],  # 空リスト
+        )
+
+        mock_response.parsed = expected_response_obj
+        mock_client_instance.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        service = AIService()
+        # アクティブタスクはあるが、日報の内容とは関係ない場合
+        active_tasks = [{"id": str(uuid4()), "title": "別のタスク"}]
+
+        result = await service.generate_report_with_logs(
+            "メール返信した", 5, active_tasks
+        )
+
+        self.assertEqual(len(result.work_logs), 0)

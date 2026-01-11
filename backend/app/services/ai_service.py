@@ -6,6 +6,7 @@ from app.core.prompts import (
     JTC_DAILY_REPORT_SYSTEM_PROMPT,
     PROMPTS_WITH_LEVEL_DESCRIPTION,
     WBS_GENERATION_SYSTEM_PROMPT,
+    DAILY_REPORT_WITH_LOGS_PROMPT,
 )
 from app.models.report import DailyReportPolished
 from app.models.project import WBSRequest, WBSResponse
@@ -138,3 +139,51 @@ class AIService:
             print(f"AI WBS Generation Error: {e}")
             # エラー時は空のリストを返すなど、安全側に倒す
             return WBSResponse(tasks=[])
+
+    async def generate_report_with_logs(
+        self, content_raw: str, politeness_level: int, active_tasks: list
+    ) -> DailyReportPolished:
+        """
+        日報の清書と同時に、タスク実績の抽出を行う
+        """
+        # タスクリストをテキスト形式に整形
+        if not active_tasks:
+            task_list_text = "（現在アクティブな担当タスクはありません）"
+        else:
+            task_list_text = "\n".join(
+                [f"- ID: {t['id']} | タスク名: {t['title']}" for t in active_tasks]
+            )
+
+        # プロンプトの構築
+        prompt = PROMPTS_WITH_LEVEL_DESCRIPTION.get(politeness_level, "")
+
+        # 工数抽出機能付きのシステムプロンプトを追加
+        prompt += DAILY_REPORT_WITH_LOGS_PROMPT.format(
+            input_text=content_raw, task_list=task_list_text
+        )
+
+        try:
+            response = await self.client.aio.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=DailyReportPolished,
+                ),
+            )
+
+            if response.parsed:
+                return response.parsed
+
+            result_json = json.loads(response.text)
+            return DailyReportPolished(**result_json)
+
+        except Exception as e:
+            print(f"AI Conversion Error: {e}")
+            # エラー時は空のログを返す
+            return DailyReportPolished(
+                subject="【報告】業務日報（AI変換失敗）",
+                content_polished=f"エラーが発生しました。\n{content_raw}",
+                politeness_level=1,
+                work_logs=[],
+            )
