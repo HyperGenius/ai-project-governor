@@ -1,15 +1,17 @@
 # backend/app/services/batch_service.py
 from datetime import date, timedelta
+
 from supabase import Client
-from app.services.ai_service import AIService
+
 from app.core.constants import (
-    TABLE_PROFILES,
-    TABLE_DAILY_REPORTS,
-    TABLE_WEEKLY_SUMMARIES,
     COL_ID,
     COL_TENANT_ID,
     COL_USER_ID,
+    TABLE_DAILY_REPORTS,
+    TABLE_PROFILES,
+    TABLE_WEEKLY_SUMMARIES,
 )
+from app.services.ai_service import AIService
 
 
 class WeeklyBatchService:

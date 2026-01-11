@@ -1,14 +1,16 @@
 # backend/apps/main.py
 import os
-from fastapi import FastAPI, Depends, HTTPException
+
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import Client
+
 from app.db.client import get_supabase
 from app.models.report import DailyReportDraft, DailyReportPolished
-from app.services.ai_service import AIService
 
 # プロジェクト関連のルーターを追加
-from app.routers import reports, projects, members, tasks, weeks
+from app.routers import members, profiles, projects, reports, tasks, weeks
+from app.services.ai_service import AIService
 
 app = FastAPI(title="AI Project Governor API")
 
@@ -33,6 +35,7 @@ app.include_router(projects.router, prefix=ROUTER_PREFIX, tags=["projects"])
 app.include_router(members.router, prefix=ROUTER_PREFIX, tags=["members"])
 app.include_router(tasks.router, prefix=ROUTER_PREFIX, tags=["tasks"])
 app.include_router(weeks.router, prefix=ROUTER_PREFIX, tags=["weeks"])
+app.include_router(profiles.router, prefix=ROUTER_PREFIX, tags=["profiles"])
 
 
 @app.get("/")

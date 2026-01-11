@@ -1,8 +1,8 @@
 # backend/app/models/week.py
-from pydantic import BaseModel, Field
-from uuid import UUID
 from datetime import date, datetime
-from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel
 
 
 class WeekGenerateRequest(BaseModel):
@@ -31,7 +31,7 @@ class WeeklyReportResponse(BaseModel):
 
     id: UUID
     tenant_id: UUID
-    user_id: Optional[UUID]
+    user_id: UUID | None
     content: str
     week_start_date: date
     week_end_date: date
