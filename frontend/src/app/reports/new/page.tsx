@@ -35,7 +35,7 @@ export default function NewReportPage() {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [content, setContent] = useState('')
-    const [politeness, setPoliteness] = useState(5)
+    const [politeness, setPoliteness] = useState(3)
 
     // タスク一覧の状態
     const [activeTasks, setActiveTasks] = useState<ActiveTask[]>([])
@@ -136,7 +136,7 @@ export default function NewReportPage() {
                             <span className="text-sm font-bold text-blue-600">Level {politeness}</span>
                         </div>
                         <Slider
-                            defaultValue={[5]}
+                            defaultValue={[politeness]}
                             max={5}
                             min={1}
                             step={1}
