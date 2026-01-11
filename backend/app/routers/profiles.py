@@ -1,5 +1,7 @@
 # backend/app/routers/profiles.py
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from gotrue.types import User
 from pydantic import BaseModel
@@ -11,12 +13,16 @@ from app.db.client import get_supabase
 
 router = APIRouter()
 
+# トーン設定の型定義
+ToneType = Literal["professional", "concise", "english", "enthusiastic"]
+LanguageType = Literal["ja", "en"]
+
 
 class AISettings(BaseModel):
     """AI設定のスキーマ"""
 
-    tone: str = "professional"  # professional, concise, english, enthusiastic
-    language: str = "ja"  # ja, en
+    tone: ToneType = "professional"
+    language: LanguageType = "ja"
     custom_instructions: str = ""
 
 

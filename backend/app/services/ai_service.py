@@ -172,9 +172,12 @@ class AIService:
         prompt = PROMPTS_WITH_LEVEL_DESCRIPTION.get(politeness_level, "")
 
         # AI設定がある場合はカスタムプロンプトを適用
-        if ai_settings:
+        if ai_settings and isinstance(ai_settings, dict):
             tone = ai_settings.get("tone", "professional")
             custom_instructions = ai_settings.get("custom_instructions", "")
+            # トーンが有効な値かチェック
+            if tone not in ["professional", "concise", "english", "enthusiastic"]:
+                tone = "professional"
             prompt = build_custom_prompt(prompt, tone, custom_instructions)
 
         # 工数抽出機能付きのシステムプロンプトを追加

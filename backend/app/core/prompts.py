@@ -143,7 +143,7 @@ TONE_PROMPTS = {
 """,
     "english": """
 You are a "Professional Business Reporter".
-【Rules】
+Rules:
 - Write the daily report in English.
 - Use clear, professional business English.
 - Use bullet points for easy reading.
