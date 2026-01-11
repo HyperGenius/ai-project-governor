@@ -155,15 +155,12 @@ class AIService:
             )
 
         # プロンプトの構築
-        # ※今回はシンプルにするため、丁寧度レベルごとのプロンプト分岐は一旦省略し、
-        #   工数抽出用の統一プロンプトを使用します（または丁寧度指示をこの中に組み込む設計も可）
-        prompt = DAILY_REPORT_WITH_LOGS_PROMPT.format(
+        prompt = PROMPTS_WITH_LEVEL_DESCRIPTION.get(politeness_level, "")
+
+        # 工数抽出機能付きのシステムプロンプトを追加
+        prompt += DAILY_REPORT_WITH_LOGS_PROMPT.format(
             input_text=content_raw, task_list=task_list_text
         )
-
-        # 丁寧度レベルの指示を追加
-        level_instruction = PROMPTS_WITH_LEVEL_DESCRIPTION.get(politeness_level, "")
-        prompt = level_instruction + "\n\n" + prompt
 
         try:
             response = await self.client.aio.models.generate_content(

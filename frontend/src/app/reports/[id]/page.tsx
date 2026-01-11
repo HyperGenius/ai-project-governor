@@ -14,8 +14,6 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, ArrowLeft, Copy, Check, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL + '/api/v1'
-
 /**
  * 日報詳細ページ
  * @param params 日報ID
@@ -37,8 +35,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
         init()
     }, [])
 
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const API_URL = `${API_BASE}/api/v1/reports/${id}`
+
     const { data: report, isLoading } = useSWR<Report>(
-        `${API_BASE}/reports/${id}`,
+        token ? [API_URL, token] : null,
         fetcher
     )
 
