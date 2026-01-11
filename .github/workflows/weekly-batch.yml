@@ -1,0 +1,38 @@
+name: Weekly Report Batch
+
+on:
+  # schedule:
+    # 毎週金曜日の 17:00 JST (UTC 08:00) に実行
+    # - cron: '0 8 * * 5'
+  # 手動実行も可能にする
+  workflow_dispatch:
+
+jobs:
+  generate-weekly-reports:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Batch Script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: "gemini-2.5-flash" 
+        run: python scripts/generate_weekly_batch.py
