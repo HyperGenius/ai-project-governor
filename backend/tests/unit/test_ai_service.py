@@ -168,3 +168,61 @@ class TestAIService(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(len(result.work_logs), 0)
+
+    @patch("app.services.ai_service.genai.Client")
+    async def test_generate_weekly_summary_success(self, MockClient):
+        """正常系: 週報生成が成功するケース"""
+
+        # --- 1. モックの準備 ---
+        mock_client_instance = MockClient.return_value
+        mock_response = MagicMock()
+        # AIが返すテキストを定義
+        mock_response.text = "## 今週の週報\n- タスクAを完了しました。"
+        # parsed ではなく text が使われる
+        mock_response.parsed = None
+
+        mock_client_instance.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        # --- 2. テスト実行 ---
+        service = AIService()
+
+        # DBから取得したと想定する辞書リスト
+        daily_reports = [
+            {
+                "report_date": "2024-01-01",
+                "content_raw": "タスクAやった",
+                "task_work_logs": [{"tasks": {"title": "タスクA"}, "hours": 2}],
+            },
+            {
+                "report_date": "2024-01-02",
+                "content_raw": "タスクBやった",
+                "task_work_logs": [],
+            },
+        ]
+
+        result = await service.generate_weekly_summary(daily_reports)
+
+        # --- 3. 検証 ---
+        self.assertIn("## 今週の週報", result)
+        # APIが1回呼ばれたことを確認
+        mock_client_instance.aio.models.generate_content.assert_called_once()
+
+    @patch("app.services.ai_service.genai.Client")
+    async def test_generate_weekly_summary_no_data(self, MockClient):
+        """正常系: 日報データが空の場合、APIを呼ばずに終了するケース"""
+
+        mock_client_instance = MockClient.return_value
+        mock_client_instance.aio.models.generate_content = AsyncMock()
+
+        service = AIService()
+
+        # 空のリストを渡す
+        result = await service.generate_weekly_summary([])
+
+        # --- 検証 ---
+        # 特定のメッセージが返ってくるか
+        self.assertIn("日報データがありません", result)
+        # ★重要: APIが「呼ばれていない」ことを確認（課金回避ロジックの検証）
+        mock_client_instance.aio.models.generate_content.assert_not_called()

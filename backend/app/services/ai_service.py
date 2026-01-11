@@ -7,6 +7,7 @@ from app.core.prompts import (
     PROMPTS_WITH_LEVEL_DESCRIPTION,
     WBS_GENERATION_SYSTEM_PROMPT,
     DAILY_REPORT_WITH_LOGS_PROMPT,
+    WEEKLY_REPORT_SYSTEM_PROMPT,
 )
 from app.models.report import DailyReportPolished
 from app.models.project import WBSRequest, WBSResponse
@@ -187,3 +188,42 @@ class AIService:
                 politeness_level=1,
                 work_logs=[],
             )
+
+    async def generate_weekly_summary(self, daily_reports: list) -> str:
+        """
+        日報リストを整形してAIに渡し、週報テキストを生成する
+        """
+        # 日報データをテキスト形式に変換
+        reports_text = ""
+        for report in daily_reports:
+            date_str = report.get("report_date", "Unknown Date")
+            content = report.get("content_raw", "")
+            # 工数ログがあれば付記（結合済みデータを想定）
+            logs = report.get("task_work_logs", [])
+            logs_text = ""
+            if logs:
+                logs_list = [
+                    f"- {l['tasks']['title']}: {l['hours']}h"
+                    for l in logs
+                    if l.get("tasks")
+                ]
+                logs_text = "\n  (工数: " + ", ".join(logs_list) + ")"
+
+            reports_text += f"\n■ {date_str}\n{content}{logs_text}\n"
+
+        if not reports_text:
+            return "（対象期間の日報データがありません）"
+
+        prompt = WEEKLY_REPORT_SYSTEM_PROMPT.format(input_text=reports_text)
+
+        try:
+            # GenerateContentConfigでresponse_mime_typeを指定せず、プレーンテキストを受け取る
+            response = await self.client.aio.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=prompt,
+            )
+            return response.text
+
+        except Exception as e:
+            print(f"AI Weekly Gen Error: {e}")
+            return f"週報の生成に失敗しました。\nエラー: {e}"

@@ -7,6 +7,7 @@ TABLE_TENANTS = "tenants"
 TABLE_PROJECTS = "projects"
 TABLE_TASKS = "tasks"
 TABLE_TASK_WORK_LOGS = "task_work_logs"
+TABLE_WEEKLY_SUMMARIES = "weekly_summaries"
 
 # --- Common Column Names ---
 COL_ID = "id"

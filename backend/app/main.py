@@ -8,7 +8,7 @@ from app.models.report import DailyReportDraft, DailyReportPolished
 from app.services.ai_service import AIService
 
 # プロジェクト関連のルーターを追加
-from app.routers import reports, projects, members, tasks
+from app.routers import reports, projects, members, tasks, weeks
 
 app = FastAPI(title="AI Project Governor API")
 
@@ -32,6 +32,7 @@ app.include_router(reports.router, prefix=ROUTER_PREFIX, tags=["reports"])
 app.include_router(projects.router, prefix=ROUTER_PREFIX, tags=["projects"])
 app.include_router(members.router, prefix=ROUTER_PREFIX, tags=["members"])
 app.include_router(tasks.router, prefix=ROUTER_PREFIX, tags=["tasks"])
+app.include_router(weeks.router, prefix=ROUTER_PREFIX, tags=["weeks"])
 
 
 @app.get("/")
