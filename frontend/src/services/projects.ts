@@ -79,7 +79,12 @@ export async function getProjectById(token: string, projectId: string): Promise<
 export async function updateTask(
     token: string,
     taskId: string,
-    data: { status?: string; assigned_to?: string }
+    data: {
+        status?: string;
+        assigned_to?: string | null;
+        start_date?: string | null;
+        end_date?: string | null;
+    }
 ): Promise<Task | null> {
     const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
         method: 'PATCH',

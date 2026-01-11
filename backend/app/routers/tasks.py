@@ -75,6 +75,13 @@ async def update_task(
     if "assigned_to" in update_data and update_data["assigned_to"]:
         update_data["assigned_to"] = str(update_data["assigned_to"])
 
+    # Date型を文字列(ISOフォーマット)に変換
+    if "start_date" in update_data and update_data["start_date"]:
+        update_data["start_date"] = update_data["start_date"].isoformat()
+
+    if "end_date" in update_data and update_data["end_date"]:
+        update_data["end_date"] = update_data["end_date"].isoformat()
+
     # 更新実行, RLSにより自テナントのタスクしか更新できない
     res = (
         supabase.table(TABLE_TASKS)

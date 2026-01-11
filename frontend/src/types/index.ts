@@ -39,6 +39,8 @@ export type Task = {
     suggested_role: string
     assigned_to: string | null
     created_at: string
+    start_date: string | null
+    end_date: string | null
 }
 
 // プロジェクト
