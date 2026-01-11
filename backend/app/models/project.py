@@ -40,6 +40,8 @@ class TaskCreate(WBSTask):
     """タスク作成用（AI生成結果 + ユーザー調整）"""
 
     assigned_to: Optional[UUID] = None  # ユーザーがアサインする場合
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
 
 
 class ProjectCreate(BaseModel):
@@ -61,6 +63,7 @@ class TaskResponse(TaskCreate):
     project_id: UUID
     status: str
     created_at: datetime
+    # start_date, end_dateはTaskCreateから継承
 
 
 class ProjectResponse(BaseModel):
@@ -86,3 +89,5 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None  # 'todo', 'in_progress', 'done'
     assigned_to: Optional[UUID] = None  # 担当者変更用
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
