@@ -1,7 +1,23 @@
 /* frontend/src/services/projects.ts */
-import { Profile, Project, TaskDraft, Task, ActiveTask } from '@/types'
+import { Profile, Project, TaskDraft, Task, ActiveTask, ChatMessage, ScopingChatResponse } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL + '/api/v1'
+
+/**
+ * 対話型スコーピング - AIとチャット形式でプロジェクト要件を明確化
+ */
+export async function scopingChat(
+    token: string,
+    messages: ChatMessage[]
+): Promise<ScopingChatResponse> {
+    const res = await fetch(`${API_BASE}/projects/scoping/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ messages }),
+    })
+    if (!res.ok) throw new Error('対話処理に失敗しました')
+    return res.json()
+}
 
 /**
  * プロジェクト概要からWBS(タスク案)を生成する
@@ -24,7 +40,14 @@ export async function generateWBS(
  */
 export async function createProject(
     token: string,
-    projectData: any // 型は適宜厳密に
+    projectData: {
+        name: string
+        description: string
+        start_date: string
+        end_date: string
+        milestones: string
+        tasks: TaskDraft[]
+    }
 ): Promise<boolean> {
     const res = await fetch(`${API_BASE}/projects`, {
         method: 'POST',

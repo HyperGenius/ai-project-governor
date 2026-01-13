@@ -81,3 +81,22 @@ export type WeeklyReport = {
     week_end_date: string
     created_at: string
 }
+
+// 対話型スコーピング用の型
+export type ChatMessage = {
+    role: 'user' | 'assistant'
+    content: string
+}
+
+export type ScopingChatResponse = {
+    message: string
+    is_complete: boolean
+    wbs_data: {
+        name: string
+        description: string
+        start_date: string
+        end_date: string
+        milestones: string
+        tasks: TaskDraft[]
+    } | null
+}

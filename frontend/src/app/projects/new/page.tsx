@@ -12,12 +12,13 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, User as UserIcon, Trash2 } from 'lucide-react'
+import { Loader2, Trash2, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
+import ScopingChat from '@/components/projects/ScopingChat'
 
 export default function NewProjectPage() {
     const router = useRouter()
-    const [step, setStep] = useState<'input' | 'review'>('input')
+    const [step, setStep] = useState<'input' | 'chat' | 'review'>('input')
     const [loading, setLoading] = useState(false)
     const [members, setMembers] = useState<Profile[]>([])
 
@@ -46,7 +47,16 @@ export default function NewProjectPage() {
         init()
     }, [])
 
-    // AIによるWBS生成ハンドラ
+    // 対話モードを開始する
+    const handleStartChat = () => {
+        if (!form.description || form.description.length < 10) {
+            toast.error('プロジェクトの概要を10文字以上入力してください')
+            return
+        }
+        setStep('chat')
+    }
+
+    // AIによるWBS生成ハンドラ（従来の一発生成）
     const handleGenerate = async () => {
         if (!form.name || !form.description) {
             toast.error('プロジェクト名と目的は必須です')
@@ -66,10 +76,35 @@ export default function NewProjectPage() {
             setStep('review')
             toast.success('プランニングが完了しました！')
         } catch (e) {
+            console.error('Failed to generate WBS:', e)
             toast.error('AI生成中にエラーが発生しました')
         } finally {
             setLoading(false)
         }
+    }
+
+    // 対話完了時のハンドラ
+    const handleChatComplete = (projectData: {
+        name: string
+        description: string
+        start_date: string
+        end_date: string
+        milestones: string
+        tasks: TaskDraft[]
+    }) => {
+        // フォームデータを更新
+        setForm({
+            name: projectData.name,
+            description: projectData.description,
+            start_date: projectData.start_date,
+            end_date: projectData.end_date,
+            milestones: projectData.milestones
+        })
+        // タスクを設定（担当者は初期値null）
+        const tasksWithAssignee = projectData.tasks.map(t => ({ ...t, assigned_to: null }))
+        setTasks(tasksWithAssignee)
+        // レビュー画面に移動
+        setStep('review')
     }
 
     // プロジェクト保存ハンドラ
@@ -90,6 +125,7 @@ export default function NewProjectPage() {
                 throw new Error()
             }
         } catch (e) {
+            console.error('Failed to save project:', e)
             toast.error('保存に失敗しました')
         } finally {
             setLoading(false)
@@ -97,7 +133,7 @@ export default function NewProjectPage() {
     }
 
     // --- タスク編集用ヘルパー ---
-    const updateTask = (index: number, key: keyof TaskDraft, value: any) => {
+    const updateTask = (index: number, key: keyof TaskDraft, value: string | number | null) => {
         const newTasks = [...tasks]
         newTasks[index] = { ...newTasks[index], [key]: value }
         setTasks(newTasks)
@@ -117,31 +153,33 @@ export default function NewProjectPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <Label>プロジェクト名</Label>
+                            <Label>プロジェクト名（任意）</Label>
                             <Input
                                 value={form.name}
                                 onChange={e => setForm({ ...form, name: e.target.value })}
                                 placeholder="例: 新規SaaS開発プロジェクト"
                             />
+                            <p className="text-xs text-gray-500 mt-1">※対話モードの場合、AIが提案してくれます</p>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>開始日</Label>
+                                <Label>開始日（任意）</Label>
                                 <Input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} />
                             </div>
                             <div>
-                                <Label>終了日</Label>
+                                <Label>終了日（任意）</Label>
                                 <Input type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} />
                             </div>
                         </div>
                         <div>
-                            <Label>プロジェクトの目的 (Mission)</Label>
+                            <Label>プロジェクトの目的 (Mission) *</Label>
                             <Textarea
                                 className="h-32"
                                 value={form.description}
                                 onChange={e => setForm({ ...form, description: e.target.value })}
-                                placeholder="何を達成するためのプロジェクトですか？"
+                                placeholder="例: ECサイトを作りたい"
                             />
+                            <p className="text-xs text-gray-500 mt-1">※対話モードでは、ここから質問が始まります</p>
                         </div>
                         <div>
                             <Label>マイルストーン (任意)</Label>
@@ -151,17 +189,41 @@ export default function NewProjectPage() {
                                 placeholder="例: 要件定義→設計→実装→テスト"
                             />
                         </div>
-                        <Button className="w-full" onClick={handleGenerate} disabled={loading}>
-                            {loading ? <Loader2 className="animate-spin mr-2" /> : '🤖'}
-                            AIでWBSを生成する
-                        </Button>
+
+                        {/* 2つのボタン：対話モードと従来の一発生成 */}
+                        <div className="space-y-2">
+                            <Button className="w-full" onClick={handleStartChat}>
+                                <MessageSquare className="mr-2 w-4 h-4" />
+                                💬 AIとの対話で要件を明確化（推奨）
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                className="w-full" 
+                                onClick={handleGenerate} 
+                                disabled={loading || !form.name || !form.description}
+                            >
+                                {loading ? <Loader2 className="animate-spin mr-2" /> : '🤖'}
+                                一発でWBSを生成する（従来方式）
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
         )
     }
 
-    // --- STEP 2: レビュー画面 ---
+    // --- STEP 2: チャット画面 ---
+    if (step === 'chat') {
+        return (
+            <ScopingChat
+                initialDescription={form.description}
+                onComplete={handleChatComplete}
+                onCancel={() => setStep('input')}
+            />
+        )
+    }
+
+    // --- STEP 3: レビュー画面 ---
     return (
         <div className="container py-8 px-4 mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* 左側: プロジェクト情報 */}

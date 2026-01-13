@@ -20,9 +20,27 @@ from app.models.project import (
     WBSRequest,
     WBSResponse,
 )
+from app.models.scoping import ScopingChatRequest, ScopingChatResponse
 from app.services.ai_service import AIService
 
 router = APIRouter()
+
+
+# --- 対話型プロジェクトスコーピングAPI ---
+@router.post("/projects/scoping/chat", response_model=ScopingChatResponse)
+async def scoping_chat(request: ScopingChatRequest):
+    """
+    対話型でプロジェクト要件を明確化し、十分な情報が揃ったらWBSを生成する
+
+    Args:
+        request: これまでの会話履歴を含むリクエスト
+
+    Returns:
+        ScopingChatResponse: AIの応答、完了フラグ、WBSデータ（完了時）
+    """
+    ai_service = AIService()
+    result = await ai_service.interactive_scoping(request.messages)
+    return result
 
 
 # --- AIによるWBS生成API (保存はしない) ---
