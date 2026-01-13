@@ -6,6 +6,7 @@ from google.genai import types
 from app.core.config import settings
 from app.core.prompts import (
     DAILY_REPORT_WITH_LOGS_PROMPT,
+    INTERACTIVE_SCOPING_SYSTEM_PROMPT,
     JTC_DAILY_REPORT_SYSTEM_PROMPT,
     PROMPTS_WITH_LEVEL_DESCRIPTION,
     WBS_GENERATION_SYSTEM_PROMPT,
@@ -14,6 +15,7 @@ from app.core.prompts import (
 )
 from app.models.project import WBSRequest, WBSResponse
 from app.models.report import DailyReportPolished
+from app.models.scoping import ChatMessage, ScopingChatResponse
 
 
 class AIService:
@@ -225,9 +227,9 @@ class AIService:
             logs_text = ""
             if logs:
                 logs_list = [
-                    f"- {l['tasks']['title']}: {l['hours']}h"
-                    for l in logs
-                    if l.get("tasks")
+                    f"- {log['tasks']['title']}: {log['hours']}h"
+                    for log in logs
+                    if log.get("tasks")
                 ]
                 logs_text = "\n  (工数: " + ", ".join(logs_list) + ")"
 
@@ -249,3 +251,69 @@ class AIService:
         except Exception as e:
             print(f"AI Weekly Gen Error: {e}")
             return f"週報の生成に失敗しました。\nエラー: {e}"
+
+    async def interactive_scoping(
+        self, messages: list[ChatMessage]
+    ) -> ScopingChatResponse:
+        """
+        対話型のプロジェクトスコーピングを実行する
+
+        Args:
+            messages: これまでの会話履歴（ユーザーとAIのやり取り）
+
+        Returns:
+            ScopingChatResponse: AIの応答、完了フラグ、WBSデータ（完了時）
+        """
+        # 会話履歴をGemini APIの形式に変換
+        # "assistant" ロールは Gemini API の "model" に変換
+        conversation_history = [
+            {
+                "role": "model" if msg.role == "assistant" else msg.role,
+                "parts": [{"text": msg.content}],
+            }
+            for msg in messages
+        ]
+
+        # システムプロンプトを最初のメッセージとして追加
+        system_message = {
+            "role": "user",
+            "parts": [{"text": INTERACTIVE_SCOPING_SYSTEM_PROMPT}],
+        }
+        ai_ack = {
+            "role": "model",
+            "parts": [
+                {
+                    "text": "承知しました。プロジェクトマネージャーとして、適切な質問を通じて要件を明確にし、必要な情報が揃い次第WBSを生成します。"
+                }
+            ],
+        }
+
+        # システムプロンプトを含めた会話履歴を構築
+        full_conversation = [system_message, ai_ack] + conversation_history
+
+        try:
+            # Gemini APIを呼び出して応答を取得
+            response = await self.client.aio.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=full_conversation,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=ScopingChatResponse,
+                ),
+            )
+
+            if response.parsed:
+                return response.parsed
+
+            # JSON文字列が返ってきた場合はパースして返す
+            result_json = json.loads(response.text)
+            return ScopingChatResponse(**result_json)
+
+        except Exception as e:
+            print(f"AI Interactive Scoping Error: {e}")
+            # エラー時は安全なレスポンスを返す
+            return ScopingChatResponse(
+                message="申し訳ございません。エラーが発生しました。もう一度お試しください。",
+                is_complete=False,
+                wbs_data=None,
+            )
