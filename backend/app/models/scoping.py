@@ -1,6 +1,8 @@
 # backend/app/models/scoping.py
 from pydantic import BaseModel, Field
 
+from app.models.project import WBSTask
+
 
 class ChatMessage(BaseModel):
     """チャットメッセージ"""
@@ -17,6 +19,17 @@ class ScopingChatRequest(BaseModel):
     )
 
 
+class WBSData(BaseModel):
+    """対話完了時に生成されるWBSデータ"""
+
+    name: str = Field(..., description="プロジェクト名")
+    description: str = Field(..., description="プロジェクト概要")
+    start_date: str = Field(..., description="開始日 (YYYY-MM-DD)")
+    end_date: str = Field(..., description="終了日 (YYYY-MM-DD)")
+    milestones: str = Field(..., description="主要マイルストーン")
+    tasks: list[WBSTask] = Field(..., description="タスクリスト")
+
+
 class ScopingChatResponse(BaseModel):
     """対話型スコーピングのレスポンス"""
 
@@ -24,7 +37,7 @@ class ScopingChatResponse(BaseModel):
     is_complete: bool = Field(
         ..., description="ヒアリングが完了し、WBS生成可能かどうか"
     )
-    wbs_data: dict | None = Field(
+    wbs_data: WBSData | None = Field(
         None,
         description="ヒアリング完了時に生成されたWBSデータ（タスクリストを含む）",
     )
