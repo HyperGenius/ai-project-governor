@@ -265,8 +265,13 @@ class AIService:
             ScopingChatResponse: AIの応答、完了フラグ、WBSデータ（完了時）
         """
         # 会話履歴をGemini APIの形式に変換
+        # "assistant" ロールは Gemini API の "model" に変換
         conversation_history = [
-            {"role": msg.role, "parts": [{"text": msg.content}]} for msg in messages
+            {
+                "role": "model" if msg.role == "assistant" else msg.role,
+                "parts": [{"text": msg.content}],
+            }
+            for msg in messages
         ]
 
         # システムプロンプトを最初のメッセージとして追加

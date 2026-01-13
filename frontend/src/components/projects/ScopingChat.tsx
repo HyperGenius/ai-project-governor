@@ -27,6 +27,7 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
     const [input, setInput] = useState('')
     const [loading, setLoading] = useState(false)
     const [isComplete, setIsComplete] = useState(false)
+    const [isComposing, setIsComposing] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
     // WBSデータを親コンポーネントに渡すヘルパー
@@ -116,9 +117,9 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
-    // Enterキーで送信
+    // Enterキーで送信（IME入力中は送信しない）
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
+        if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
             e.preventDefault()
             handleSend()
         }
@@ -171,6 +172,8 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={handleKeyDown}
+                                onCompositionStart={() => setIsComposing(true)}
+                                onCompositionEnd={() => setIsComposing(false)}
                                 placeholder="回答を入力してください... (Shift+Enterで改行)"
                                 className="flex-1 min-h-[80px]"
                                 disabled={loading}

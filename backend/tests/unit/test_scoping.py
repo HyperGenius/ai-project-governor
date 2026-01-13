@@ -121,6 +121,52 @@ class TestInteractiveScoping(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(result.wbs_data)
         self.assertIn("エラー", result.message)
 
+    @patch("app.services.ai_service.genai.Client")
+    async def test_interactive_scoping_role_conversion(self, mock_client):
+        """正常系: assistant ロールが model に変換されることを確認"""
+
+        # モックの準備
+        mock_client_instance = mock_client.return_value
+        mock_response = MagicMock()
+
+        # AIが質問を返すレスポンス
+        expected_response = ScopingChatResponse(
+            message="了解しました。次の質問です。",
+            is_complete=False,
+            wbs_data=None,
+        )
+
+        mock_response.parsed = expected_response
+        mock_client_instance.aio.models.generate_content = AsyncMock(
+            return_value=mock_response
+        )
+
+        # テスト実行 (assistant ロールを含むメッセージ)
+        service = AIService()
+        messages = [
+            ChatMessage(role="user", content="ECサイトを作りたい"),
+            ChatMessage(role="assistant", content="ターゲット層は？"),
+            ChatMessage(role="user", content="個人向けです"),
+        ]
+
+        await service.interactive_scoping(messages)
+
+        # 検証: APIが呼ばれたことを確認
+        mock_client_instance.aio.models.generate_content.assert_called_once()
+
+        # APIに渡されたcontentsを取得
+        call_args = mock_client_instance.aio.models.generate_content.call_args
+        contents = call_args.kwargs["contents"]
+
+        # システムメッセージ + ユーザーメッセージの後に assistant が model に変換されているか確認
+        # contents[0]: system message (user)
+        # contents[1]: ai ack (model)
+        # contents[2]: user message
+        # contents[3]: assistant message -> should be "model"
+        # contents[4]: user message
+        self.assertEqual(contents[3]["role"], "model")
+        self.assertEqual(contents[3]["parts"][0]["text"], "ターゲット層は？")
+
 
 if __name__ == "__main__":
     unittest.main()
