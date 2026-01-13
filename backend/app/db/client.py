@@ -1,5 +1,6 @@
 # backend/app/db/client.py
-from supabase import create_client, Client
+from supabase import Client, create_client
+
 from app.core.config import settings
 
 # 再接続のオーバーヘッドを防ぐためグローバル変数として保持

@@ -1,6 +1,6 @@
 # backend/app/api/deps.py
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from supabase import Client
 from supabase_auth.types import User
 

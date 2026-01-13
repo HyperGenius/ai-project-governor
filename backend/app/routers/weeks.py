@@ -1,28 +1,28 @@
 # backend/app/routers/weeks.py
-from fastapi import APIRouter, Depends, HTTPException
-from supabase import Client
-from gotrue.types import User
-from typing import List
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException
+from gotrue.types import User
+from supabase import Client
+
 from app.api.deps import get_current_user
+from app.core.constants import (
+    COL_CREATED_AT,
+    COL_ID,
+    COL_TENANT_ID,
+    COL_USER_ID,
+    TABLE_DAILY_REPORTS,
+    TABLE_PROFILES,
+    TABLE_WEEKLY_SUMMARIES,
+)
 from app.db.client import get_supabase
-from app.services.ai_service import AIService
 from app.models.week import (
     WeekGenerateRequest,
     WeekGenerateResponse,
     WeeklyReportCreate,
     WeeklyReportResponse,
 )
-from app.core.constants import (
-    TABLE_PROFILES,
-    TABLE_DAILY_REPORTS,
-    TABLE_WEEKLY_SUMMARIES,
-    COL_ID,
-    COL_USER_ID,
-    COL_TENANT_ID,
-    COL_CREATED_AT,
-)
+from app.services.ai_service import AIService
 
 router = APIRouter()
 
@@ -91,7 +91,7 @@ async def create_weekly_report(
     return res.data[0]
 
 
-@router.get("/weeks", response_model=List[WeeklyReportResponse])
+@router.get("/weeks", response_model=list[WeeklyReportResponse])
 async def get_weekly_reports(
     current_user: User = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),

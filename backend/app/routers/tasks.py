@@ -1,15 +1,15 @@
 # backend/app/routers/tasks.py
-from fastapi import APIRouter, Depends, HTTPException
-from supabase import Client
-from gotrue.types import User
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
+from gotrue.types import User
 from pydantic import BaseModel
-from typing import List
+from supabase import Client
 
 from app.api.deps import get_current_user
+from app.core.constants import COL_ID, TABLE_TASKS
 from app.db.client import get_supabase
-from app.models.project import TaskUpdate, TaskResponse
-from app.core.constants import TABLE_TASKS, COL_ID
+from app.models.project import TaskResponse, TaskUpdate
 
 router = APIRouter()
 
@@ -21,7 +21,7 @@ class ActiveTaskResponse(BaseModel):
     project_name: str  # プロジェクト名もあったほうが分かりやすい
 
 
-@router.get("/tasks/my-active", response_model=List[ActiveTaskResponse])
+@router.get("/tasks/my-active", response_model=list[ActiveTaskResponse])
 async def get_my_active_tasks(
     current_user: User = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),

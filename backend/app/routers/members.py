@@ -1,14 +1,14 @@
 # backend/app/routers/members.py
-from fastapi import APIRouter, Depends, HTTPException
-from supabase import Client
-from gotrue.types import User
-from pydantic import BaseModel
-from typing import List
 from uuid import UUID
 
+from fastapi import APIRouter, Depends, HTTPException
+from gotrue.types import User
+from pydantic import BaseModel
+from supabase import Client
+
 from app.api.deps import get_current_user
+from app.core.constants import COL_ID, COL_TENANT_ID, TABLE_PROFILES
 from app.db.client import get_supabase
-from app.core.constants import TABLE_PROFILES, COL_ID, COL_TENANT_ID
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ class MemberResponse(BaseModel):
     role: str | None
 
 
-@router.get("/members", response_model=List[MemberResponse])
+@router.get("/members", response_model=list[MemberResponse])
 async def get_tenant_members(
     current_user: User = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),

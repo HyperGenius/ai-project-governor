@@ -1,16 +1,19 @@
+import json
+
 from google import genai
 from google.genai import types
-import json
+
 from app.core.config import settings
 from app.core.prompts import (
+    DAILY_REPORT_WITH_LOGS_PROMPT,
     JTC_DAILY_REPORT_SYSTEM_PROMPT,
     PROMPTS_WITH_LEVEL_DESCRIPTION,
     WBS_GENERATION_SYSTEM_PROMPT,
-    DAILY_REPORT_WITH_LOGS_PROMPT,
     WEEKLY_REPORT_SYSTEM_PROMPT,
+    build_custom_prompt,
 )
-from app.models.report import DailyReportPolished
 from app.models.project import WBSRequest, WBSResponse
+from app.models.report import DailyReportPolished
 
 
 class AIService:
@@ -114,7 +117,7 @@ class AIService:
         プロジェクト名: {request.name}
         概要: {request.description}
         期間: {request.start_date} 〜 {request.end_date}
-        マイルストーン: {request.milestones or '特になし'}
+        マイルストーン: {request.milestones or "特になし"}
         """
 
         prompt = WBS_GENERATION_SYSTEM_PROMPT.format(input_text=input_text)
@@ -142,10 +145,20 @@ class AIService:
             return WBSResponse(tasks=[])
 
     async def generate_report_with_logs(
-        self, content_raw: str, politeness_level: int, active_tasks: list
+        self,
+        content_raw: str,
+        politeness_level: int,
+        active_tasks: list,
+        ai_settings: dict | None = None,
     ) -> DailyReportPolished:
         """
         日報の清書と同時に、タスク実績の抽出を行う
+
+        Args:
+            content_raw: 粗いテキスト
+            politeness_level: 丁寧度レベル (1-5)
+            active_tasks: アクティブなタスクのリスト
+            ai_settings: ユーザーのAI設定（tone, language, custom_instructions）
         """
         # タスクリストをテキスト形式に整形
         if not active_tasks:
@@ -157,6 +170,15 @@ class AIService:
 
         # プロンプトの構築
         prompt = PROMPTS_WITH_LEVEL_DESCRIPTION.get(politeness_level, "")
+
+        # AI設定がある場合はカスタムプロンプトを適用
+        if ai_settings and isinstance(ai_settings, dict):
+            tone = ai_settings.get("tone", "professional")
+            custom_instructions = ai_settings.get("custom_instructions", "")
+            # トーンが有効な値かチェック
+            if tone not in ["professional", "concise", "english", "enthusiastic"]:
+                tone = "professional"
+            prompt = build_custom_prompt(prompt, tone, custom_instructions)
 
         # 工数抽出機能付きのシステムプロンプトを追加
         prompt += DAILY_REPORT_WITH_LOGS_PROMPT.format(
