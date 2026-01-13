@@ -29,6 +29,22 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
     const [isComplete, setIsComplete] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
 
+    // WBSデータを親コンポーネントに渡すヘルパー
+    const completeScoping = (wbsData: NonNullable<ScopingChatResponse['wbs_data']>) => {
+        setIsComplete(true)
+        toast.success('要件定義が完了しました！WBSを生成します。')
+        setTimeout(() => {
+            onComplete({
+                name: wbsData.name,
+                description: wbsData.description,
+                start_date: wbsData.start_date,
+                end_date: wbsData.end_date,
+                milestones: wbsData.milestones || '',
+                tasks: wbsData.tasks
+            })
+        }, COMPLETION_TRANSITION_DELAY_MS)
+    }
+
     // メッセージを送信する
     const handleSend = async () => {
         if (!input.trim() || loading) return
@@ -55,19 +71,7 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
 
             // ヒアリングが完了した場合
             if (response.is_complete && response.wbs_data) {
-                setIsComplete(true)
-                toast.success('要件定義が完了しました！WBSを生成します。')
-                // 親コンポーネントにデータを渡す
-                setTimeout(() => {
-                    onComplete({
-                        name: response.wbs_data!.name,
-                        description: response.wbs_data!.description,
-                        start_date: response.wbs_data!.start_date,
-                        end_date: response.wbs_data!.end_date,
-                        milestones: response.wbs_data!.milestones || '',
-                        tasks: response.wbs_data!.tasks
-                    })
-                }, COMPLETION_TRANSITION_DELAY_MS)
+                completeScoping(response.wbs_data)
             }
         } catch (e) {
             toast.error('エラーが発生しました')
@@ -97,18 +101,7 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
             setMessages([...messages, aiMessage])
 
             if (response.is_complete && response.wbs_data) {
-                setIsComplete(true)
-                toast.success('要件定義が完了しました！')
-                setTimeout(() => {
-                    onComplete({
-                        name: response.wbs_data!.name,
-                        description: response.wbs_data!.description,
-                        start_date: response.wbs_data!.start_date,
-                        end_date: response.wbs_data!.end_date,
-                        milestones: response.wbs_data!.milestones || '',
-                        tasks: response.wbs_data!.tasks
-                    })
-                }, COMPLETION_TRANSITION_DELAY_MS)
+                completeScoping(response.wbs_data)
             }
         } catch (e) {
             toast.error('エラーが発生しました')
