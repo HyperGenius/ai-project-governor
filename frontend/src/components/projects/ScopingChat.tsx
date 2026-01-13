@@ -2,7 +2,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ChatMessage, TaskDraft } from '@/types'
+import { ChatMessage, ProjectData } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,16 +11,12 @@ import { toast } from 'sonner'
 import { scopingChat } from '@/services/projects'
 import { createClient } from '@/utils/supabase/client'
 
+// WBS生成完了後の遷移ディレイ（ユーザーが完了メッセージを確認できるように）
+const COMPLETION_TRANSITION_DELAY_MS = 1000
+
 type ScopingChatProps = {
     initialDescription: string
-    onComplete: (projectData: {
-        name: string
-        description: string
-        start_date: string
-        end_date: string
-        milestones: string
-        tasks: TaskDraft[]
-    }) => void
+    onComplete: (projectData: ProjectData) => void
     onCancel: () => void
 }
 
@@ -71,7 +67,7 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
                         milestones: response.wbs_data!.milestones || '',
                         tasks: response.wbs_data!.tasks
                     })
-                }, 1000)
+                }, COMPLETION_TRANSITION_DELAY_MS)
             }
         } catch (e) {
             toast.error('エラーが発生しました')
@@ -112,7 +108,7 @@ export default function ScopingChat({ initialDescription, onComplete, onCancel }
                         milestones: response.wbs_data!.milestones || '',
                         tasks: response.wbs_data!.tasks
                     })
-                }, 1000)
+                }, COMPLETION_TRANSITION_DELAY_MS)
             }
         } catch (e) {
             toast.error('エラーが発生しました')

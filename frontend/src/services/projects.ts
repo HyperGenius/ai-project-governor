@@ -1,5 +1,5 @@
 /* frontend/src/services/projects.ts */
-import { Profile, Project, TaskDraft, Task, ActiveTask, ChatMessage, ScopingChatResponse } from '@/types'
+import { Profile, Project, TaskDraft, Task, ActiveTask, ChatMessage, ScopingChatResponse, ProjectData } from '@/types'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL + '/api/v1'
 
@@ -40,14 +40,7 @@ export async function generateWBS(
  */
 export async function createProject(
     token: string,
-    projectData: {
-        name: string
-        description: string
-        start_date: string
-        end_date: string
-        milestones: string
-        tasks: TaskDraft[]
-    }
+    projectData: ProjectData
 ): Promise<boolean> {
     const res = await fetch(`${API_BASE}/projects`, {
         method: 'POST',

@@ -82,6 +82,16 @@ export type WeeklyReport = {
     created_at: string
 }
 
+// プロジェクト作成データ
+export type ProjectData = {
+    name: string
+    description: string
+    start_date: string
+    end_date: string
+    milestones: string
+    tasks: TaskDraft[]
+}
+
 // 対話型スコーピング用の型
 export type ChatMessage = {
     role: 'user' | 'assistant'
